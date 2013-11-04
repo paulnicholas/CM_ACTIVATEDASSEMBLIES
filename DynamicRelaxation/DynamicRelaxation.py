@@ -2,12 +2,13 @@
 
 import math
 
+
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-class Vector3D(object):
+class Point3D(object):
     
     def __init__(self,*args):
         if len(args) == 0:
@@ -31,7 +32,7 @@ class Vector3D(object):
     def set(self,*args):
         if len(args)==1:
             v = args[0]
-            set(v.x(),v.y(),v.z()); return self 
+            self.set(v.x(),v.y(),v.z()); return self 
         elif len(args)==3: 
             self._x = args[0]; self._y = args[1]; self._z = args[2]; return self
         
@@ -40,17 +41,17 @@ class Vector3D(object):
     def setZ(self,z):self._z = z; return self 
     
     
-    def __add__(self, p ): return Vector3D(self.x() + p.x(),self.y() + p.y(),self.z() + p.z())
-    def addBy(self, a,b,c ): return Vector3D(self._x + a, self._y + b, self._z + c)
+    def __add__(self, p ): return Point3D(self.x() + p.x(),self.y() + p.y(),self.z() + p.z())
+    def addBy(self, a,b,c ): return Point3D(self._x + a, self._y + b, self._z + c)
     
-    def __sub__(self, p ): return Vector3D(self.x() - p.x(),self.y() - p.y(),self.z() - p.z())
-    def subtractBy(self, a, b, c): return Vector3D(self._x - a, self._y - b, self._z - c)
+    def __sub__(self, p ): return Point3D(self.x() - p.x(),self.y() - p.y(),self.z() - p.z())
+    def subtractBy(self, a, b, c): return Point3D(self._x - a, self._y - b, self._z - c)
     
-    def __mul__(self,  v ): return Vector3D( self._x * v.x(),self._y * v.y(), self._z * v.z())
-    def multiplyBy(self,  f ): return Vector3D(self._x * f, self._y * f, self._z * f)
+    def __mul__(self,  v ): return Point3D( self._x * v.x(),self._y * v.y(), self._z * v.z())
+    def multiplyBy(self,  f ): return Point3D(self._x * f, self._y * f, self._z * f)
     
-    def __div__(self,  v ): return Vector3D( self._x / v.x(),self._y / v.y(), self._z / v.z())
-    def divideBy(self,  f ): return Vector3D(self._x / f, self._y / f, self._z/ f)
+    def __div__(self,  v ): return Point3D( self._x / v.x(),self._y / v.y(), self._z / v.z())
+    def divideBy(self,  f ): return Point3D(self._x / f, self._y / f, self._z/ f)
     
     def distanceTo(self, p ): return math.sqrt( self.distanceSquaredTo( p ) )
     def distanceSquaredTo(self, p ): d = self - p; return d.dot(d)
@@ -60,18 +61,20 @@ class Vector3D(object):
     def length(self): return math.sqrt( self.lengthSquared() )
     def lengthSquared(self): return self.dot(self) 
     
-    def normalize(self): return Vector3D(self).divideBy(self.length())
+    def normalize(self): return Point3D(self).divideBy(self.length())
       
     def clear(self):self._x = 0; self._y = 0; self._z = 0; return self
     
     
     def __str__(self): return "(" + str(self._x) + ", " + str(self._y) + ", " + str(self._z) + ")" 
     
-    def __neg__(self): return Vector3D(-self.x(),-self.y(),-self.z())
-    def cross(self, p ): return Vector3D(     self.y() * p.z() - self.z() * p.y(), self.z() * p.x() - self.x() * p.z(), self.x() * p.y() - self.y() * p.x() )
-    #def cross(self, p ): return Vector3D(     self.y() * p.z() - self.z() * p.y(), self.x() * p.z() - self.z() * p.x(), self.x() * p.y() - self.y() * p.x() )
+    def __neg__(self): return Point3D(-self.x(),-self.y(),-self.z())
+    def cross(self, p ): return Point3D(     self.y() * p.z() - self.z() * p.y(), self.z() * p.x() - self.x() * p.z(), self.x() * p.y() - self.y() * p.x() )
+    #def cross(self, p ): return Point3D(     self.y() * p.z() - self.z() * p.y(), self.x() * p.z() - self.z() * p.x(), self.x() * p.y() - self.y() * p.x() )
     
     def isZero(self): return self._x == 0 and self._y == 0 and self._z == 0;
+    def __eq__(self,p): return self._x == p.x() and self._y == p.y() and self._z == p.z();
+    def __ne__(self,p): return self._x != p.x() or self._y != p.y() or self._z != p.z();
     
     def distanceSegmentSq(self, p, q) :
         v = q - p
@@ -102,81 +105,65 @@ class Vector3D(object):
     
     
     #     * project on plane     * assume normalized direction     * @param dir
-    def project(self, dir) : t = -self.dot(dir); return Vector3D(self + dir.multiplyBy(t))
+    def project(self, dir) : t = -self.dot(dir); return Point3D(self + dir.multiplyBy(t))
     
     
     #     * project on vector     * assume normalized direction     * @param dir
-    def projectDir(self, dir) : t = self.dot(dir); return Vector3D(dir.multiplyBy(t))
-    
+    def projectDir(self, dir) : t = self.dot(dir); return Point3D(dir.multiplyBy(t))
+
 class Particle(object):
     
     def __init__(self,  m ):
-        self.position = Vector3D();
-        self.velocity = Vector3D();
-        self.force = Vector3D();
-        self.mass = Vector3D(m,m,m);
+        self.position = Point3D();
+        self.velocity = Point3D();
+        self.force = Point3D();
+        self.mass = Point3D(m,m,m);
         self.fixed = False;
-        self.constraint = Vector3D();
+        self.constraint = Point3D();
         self.constrained = False;
     
     def __str__(self):
         return 'p: '+str(self.position)+', v: '+str(self.velocity)+ ', fixed: '+str(self.fixed)+', constrained: '+str(self.constrained)
     
-    def distanceTo(self, p ):
-      return self.position.distanceTo( p.position )
+    def distanceTo(self, p ): return self.position.distanceTo( p.position )
     
-    def makeFixed(self):
-        self.fixed = True;
-        self.velocity.clear()
+    def makeFixed(self): self.fixed = True; self.velocity.clear()
+    def isFixed(self): return self.fixed
     
-    def isFixed(self):
-        return self.fixed
-        
-    def isFree(self):
-        return not self.fixed
-        
-    def isConstrained(self):
-        return self.constrained
-        
-    def makeFree(self):
-        self.fixed = False
+    def makeFree(self): self.fixed = False
+    def isFree(self): return not self.fixed
     
-    def massAverage(self):
-        return (self.mass.x() + self.mass.y() + self.mass.z())/3
-        
-    def setMass(self, m ):
-        self.mass = Vector3D(m,m,m)
-        
-    def constrained(self, nx, ny, nz) :
-        self.constraint = Vector3D(nx,ny,nz).normalize()
+    def massAverage(self): return (self.mass.x() + self.mass.y() + self.mass.z())/3
+    def setMass(self, m ): self.mass = Point3D(m,m,m)
+    
+    def constrained(self, nx, ny, nz) : 
+        self.constraint = Point3D(nx,ny,nz).normalize()
         self.constrained = True
-    
-    def getConstraint(self) :
-        return self.constraint
+    def getConstraint(self) : return self.constraint
+    def isConstrained(self): return self.constrained
         
-    def constraint(self):
-        self.force.project(constraint)
+    def constraint(self): self.force.project(constraint)
         
-    def update(self):
+    def update(self): 
         pass
-        
+    
     def reset(self):
         self.position.clear()
         self.velocity.clear()
         self.force.clear()
-        #self.mass = Vector3D(1,1,1)
+        #self.mass = Point3D(1,1,1)
 
 class ParticleSystem(object):
-
+    
     RUNGE_KUTTA = 0
     MODIFIED_EULER = 1
     VERLET = 2
     EULER = 3
     
-    #DEFAULT_GRAVITY = Vector3D()
+    #DEFAULT_GRAVITY = Point3D()
     #DEFAULT_DRAG = 0.001  
     
-    def __init__(self, gravity = Vector3D(), drag = 0.0001):
+    def __init__(self, gravity = Point3D(), drag = 0.0001):
         self.init()
         self.gravity = gravity
         self.drag = drag
@@ -242,8 +229,19 @@ class ParticleSystem(object):
             kinetic += .5 * p.mass.dot(p.velocity * p.velocity)
         return kinetic
     
-    
-    
+    def findParticleEqualToPoint(self,v) :
+        for p in self.particles :
+            if p.position == v :
+                return p
+        return None
+        
+    def makeParticleNonDuplicate(self,v) :
+        p = self.findParticleEqualToPoint(v)
+        if p == None:
+            return self.makeParticle(v)
+        else:
+            return p
+        
     def makeParticle(self, *args) :
         if len(args)==0:        
             return self.makeParticle( 1.0, 0, 0, 0 );
@@ -285,7 +283,7 @@ class ParticleSystem(object):
     
     def makeElastic( self, a,  b,  E,  A,  l0,  t0 ) :
         m = Elastic( a, b, E , A , l0, t0)
-        self.elastic.append( m )
+        self.elastics.append( m )
         return m
     
     def makeCable( self, a,  b,  E,  A,  l0,  t0 ) :
@@ -373,7 +371,7 @@ class ParticleSystem(object):
 
 #@@@@@@@@@@@@@@@@
 
-class Integrator:
+class Integrator(object):
     
     def step(self, t):
         pass
@@ -404,10 +402,10 @@ class VerletIntegrator(Integrator):
                 
                 # update position
                 p.position = p.position + p.velocity.divideBy(t)
-                p.position = p.position + Vector3D( ax*halftt, ay*halftt, az*halftt )
+                p.position = p.position + Point3D( ax*halftt, ay*halftt, az*halftt )
                 
                 # half step with previous acceleration
-                p.velocity = p.velocity + Vector3D( ax*halft, ay*halft, az*halft )
+                p.velocity = p.velocity + Point3D( ax*halft, ay*halft, az*halft )
                 
                 # compute forces with new position
                 self._ps.clearForces()
@@ -419,7 +417,7 @@ class VerletIntegrator(Integrator):
                 az = p.force.z() / p.mass.z()
                 
                 # half step with new acceleration
-                p.velocity = p.velocity + Vector3D( ax*halft, ay*halft, az*halft )
+                p.velocity = p.velocity + Point3D( ax*halft, ay*halft, az*halft )
                 
         self.satisfyConstraints()
         
@@ -458,12 +456,12 @@ class EulerIntegrator(Integrator):
         
         for p in self._ps.particles:
             if p.isFree():
-                p.velocity = p.velocity + Vector3D( p.force.x()/(p.mass.x()*t), p.force.y()/(p.mass.y()*t), p.force.z()/(p.mass.z()*t) )
+                p.velocity = p.velocity + Point3D( p.force.x()/(p.mass.x()*t), p.force.y()/(p.mass.y()*t), p.force.z()/(p.mass.z()*t) )
                 p.position = p.position + p.velocity.divideBy(t)
 
 #@@@@@@@@@@@@@@@@
 
-class Force:
+class Force(object):
     
     def __init__(self):
         self.on = True;
@@ -472,10 +470,10 @@ class Force:
         pass
           
     def turnOff(self):
-        self.on = False
+        self.on = False; return self 
     
     def turnOff(self):
-          self.on = True
+          self.on = True; return self 
           
     def isOn(self):
         return self.on
@@ -498,14 +496,14 @@ class Spring(Force):
     
     def currentLength(self) : return self.a.position.distanceTo( self.b.position )
     
-    def setStrength( self, k )  : self.k = k
+    def setStrength( self, k )  : self.k = k; return self 
     
-    def setDamping( self, d )  : self.damping = d
+    def setDamping( self, d )  : self.damping = d; return self 
     
-    def setRestLength( self, l )  : self.l0 = l
+    def setRestLength( self, l )  : self.l0 = l; return self 
     
-    def setA( self, p )  : self.a = p
-    def setB( self, p )  : self.b = p
+    def setA( self, p )  : self.a = p; return self 
+    def setB( self, p )  : self.b = p; return self 
     
     def apply(self):
         
@@ -516,7 +514,7 @@ class Spring(Force):
             a2bDistance = math.sqrt( a2b.dot(a2b) )
         
             if ( a2bDistance == 0 ):
-                a2b = Vector3D()
+                a2b = Point3D()
             else :
                 a2b = a2b.multiplyBy(a2bDistance)
                 
@@ -559,49 +557,51 @@ class Elastic(Force) :
         self.t0 = _t0
         self.a = _a
         self.b = _b
-        self.on = true
+        self.on = True
         self.fixTension = False
         
     def getOneEnd(self)  : return self.a
     def getTheOtherEnd(self)  :      return self.b
     
-    def setPartA(self, p )  :      self.a = p
-    def setPartB( self, p )  :      self.b = p
+    def setPartA(self, p )  :      self.a = p; return self 
+    def setPartB( self, p )  :      self.b = p; return self 
     
     def currentLength(self) :      return self.a.position.distanceTo( self.b.position )
     
     def getRestLength(self)  :  return self.l0
-    def setRestLength( self, _l ) :  self.l0 = _l 
+    def setRestLength( self, _l ) :  self.l0 = _l; return self  
     
     def getPrestress(self)  :  return self.t0
-    def setPrestress( self, _t ) : self.t0 = _t 
+    def setPrestress( self, _t ) : self.t0 = _t; return self  
+    
+    def setFixedTension(self, bool) : self.fixTension = bool; return self 
     
     
     def getE(self)  :  return self.E
-    def setE(self, _E)  :  self.E = _E
+    def setE(self, _E)  :  self.E = _E; return self 
     
     def getA(self)  :  return self.A
-    def setA(self, _A)  : self.A = _A
+    def setA(self, _A)  : self.A = _A; return self 
     
     
     def apply(self):
         
         if ( self.on and ( self.a.isFree() or self.b.isFree() ) ) :
         
-            a2b = self.a.position - self.b.position            
+            a2b = self.a.position - self.b.position
             a2bDistance = math.sqrt( a2b.dot(a2b) )
             
             if ( a2bDistance == 0 ):
-                a2b = Vector3D()
+                a2b = Point3D()
             else :
-                a2bX .divideBy( a2bDistance)
+                a2b.divideBy( a2bDistance)
             
             # elastic force is proportional to how much it stretched 
             # t = EA/l0 * (l-l0) + t0  
             elasticForce = 0
             
             # if tension not fixed
-            if (not fixTension):
+            if (not self.fixTension):
                 elasticForce = -( a2bDistance - self.l0 ) * self.E*self.A/self.l0 + self.t0
             # if tension fixed prestress only
             else: elasticForce = t0
@@ -619,10 +619,10 @@ class Elastic(Force) :
 class Cable(Elastic) :
     
     def __init__( self, _a,  _b,  _E,  _A,  _l0,  _t0 = 0 ):
-        super(_a,_b,_E,_A,_l0,_t0)
+        super(Cable,self).__init__(_a,_b,_E,_A,_l0,_t0)
         self.slack = False
         
-    def apply():
+    def apply(self):
         if ( self.on and ( self.a.isFree() or self.b.isFree() ) ):
             
             a2b = self.a.position - self.b.position
@@ -631,7 +631,7 @@ class Cable(Elastic) :
             a2bDistance = math.sqrt( a2b.dot(a2b) )
             
             # check if cable is slack
-            if ( a2bDistance >= l0 ) :
+            if ( a2bDistance >= self.l0 ) :
                 slack = False;
                 
                 a2b.divideBy(a2bDistance)
@@ -642,10 +642,10 @@ class Cable(Elastic) :
                 elasticForce = 0;
                 
                 # if tension not fixed
-                if (not fixTension):
+                if (not self.fixTension):
                     elasticForce = -( a2bDistance - self.l0 ) * self.E*self.A/self.l0 + self.t0
                 # if tension fixed prestress only
-                else: elasticForce = t0
+                else: elasticForce = self.t0
                 
                 
                 a2b = a2b.multiplyBy( elasticForce)
@@ -676,16 +676,16 @@ class Bending(Force):
         self.L0ab = _L0ab
         self.L0bc = _L0bc 
     
-    def setA(  self, p ) : self.a = p
-    def setB(  self, p ) : self.b = p
-    def setC(  self, p ) : self.c = p
+    def setA(  self, p ) : self.a = p; return self 
+    def setB(  self, p ) : self.b = p; return self 
+    def setC(  self, p ) : self.c = p; return self 
     
     def getOneEnd( self): return self.a
     def getTheMiddle( self): return self.b
     def getTheOtherEnd( self): return self.c
     
-    def setEI( self, E, I )    : self.EI = E*I
-    def setES( self, E, S )    : self.ES = E*S
+    def setEI( self, E, I )    : self.EI = E*I; return self 
+    def setES( self, E, S )    : self.ES = E*S; return self 
     
     def apply( self):
         
@@ -705,8 +705,8 @@ class Bending(Force):
             Tbc = bc.multiplyBy(self.ES*(1/self.L0bc - 1/Lbc));
             
             # compute moment
-            Fab = Vector3D()
-            Fbc = Vector3D()
+            Fab = Point3D()
+            Fbc = Point3D()
             
             if (self.a.position.distanceLineSq(self.b.position,self.c.position) > 10e-8) :
                 Mb = ab.cross(bc).multiplyBy(2*self.EI/(Lac*Lab*Lbc));
@@ -731,7 +731,6 @@ class Bending(Force):
 
 class Attraction(Force):
     
-    
     def __init__( self,  _a,  _b,  _k,  _distanceMin ):
         self.a = _a
         self.b = _b
@@ -740,31 +739,20 @@ class Attraction(Force):
         self.distanceMin = _distanceMin
         self.distanceMinSquared = _distanceMin*_distanceMin
 
-    def setA( self, p ):
-        self.a = p
+    def setA( self, p ): self.a = p; return self 
+    def setB( self, p ): self.b = p; return self 
 
-    def setB( self, p ):
-        self.b = p
-
-    def getMinimumDistance(self):
-        return self.distanceMin
-
+    def getMinimumDistance(self): return self.distanceMin
     def setMinimumDistance( self, d ):
         self.distanceMin = d
-        self.distanceMinSquared = d*d
+        self.distanceMinSquared = d*d 
+        return self 
 
+    def setStrength( self, _k ): self.k = _k; return self 
+    def getStrength(self): return self.k; return self 
 
-    def setStrength( self, _k ):
-        self.k = _k
-        
-    def  getStrength(self):
-        return self.k
-
-    def getOneEnd(self):
-        return self.a
-
-    def getTheOtherEnd(self):
-        return self.b
+    def getOneEnd(self): return self.a; return self 
+    def getTheOtherEnd(self): return self.b; return self 
 
     def apply(self):
         if ( self.on and ( self.a.isFree() or self.b.isFree() ) ):
@@ -773,23 +761,21 @@ class Attraction(Force):
             
             a2bDistanceSquared = a2b.dot(a2b)
             
+            # force magnitude clamping to avoid explosion
             if ( a2bDistanceSquared < self.distanceMinSquared ) :
                 a2bDistanceSquared = self.distanceMinSquared;
-
+            
             force = self.k * self.a.massAverage() * self.b.massAverage() / a2bDistanceSquared;
-
+            
             length = math.sqrt( a2bDistanceSquared );
             
             # make unit vector
-            
-            a2b = a2b.dividedBy(length) 
+            a2b = a2b.divideBy(length) 
             
             # multiply by force 
-            
             a2b = a2b.multiplyBy(force) 
             
             # apply
-            
             if ( self.a.isFree() ):
                 self.a.force = self.a.force - a2b
             if ( self.b.isFree() ):
@@ -804,23 +790,15 @@ class Load(Force):
         self.dir = _d.multiplyBy(1/_d.length())
         self.on = True
     
-    def setParticle( self, p ):
-        self.a = p
+    def setParticle( self, p ): self.a = p; return self 
+    def getParticle(self): return self.a
     
-    
-    def setForce( self, f ):
-        self.force = f
-    
-    def getForce(self):
-        return self.force
+    def setForce( self, f ): self.force = f; return self     
+    def getForce(self): return self.force
     
     def setDirection( self, v ):
         # normalize direction
-        self.dir = v.multiplyBy(1/v.length())
-    
-    def getParticle(self):
-        return self.a
-    
+        self.dir = v.multiplyBy(1/v.length()); return self 
     
     def apply(self):
         
@@ -829,3 +807,136 @@ class Load(Force):
         if ( self.on and self.a.isFree() ):
                 self.a.force = self.a.force + load
 
+
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+# constructor functions
+
+
+def makeSpringsFromList( ps, pts, k = 10, l0 = 0, closed = False, mergeExistingParticles = True):
+    
+    particles = []
+    
+    # create particles depending on whether there is need to merge the particles that are equal
+    for v in pts : 
+        if mergeExistingParticles :
+            particles.append(ps.makeParticleNonDuplicate(v))
+        else :
+            particles.append(ps.makeParticle(v))
+    
+    springs = []
+    for i in range(len(particles)-1):
+        springs.append(ps.makeSpring(particles[i],particles[i+1],k,l0))
+    if closed :
+        springs.append(ps.makeSpring(particles[-1],particles[0],k,l0))
+        
+    return (particles, springs)
+
+    
+def makeElasticsFromList( ps, pts, E = 10, A = 123, t0 = 0, closed = False, fixTension = False, mergeExistingParticles = True):
+    
+    particles = []
+    
+    # create particles depending on whether there is need to merge the particles that are equal
+    for v in pts : 
+        if mergeExistingParticles :
+            particles.append(ps.makeParticleNonDuplicate(v))
+        else :
+            particles.append(ps.makeParticle(v))
+    
+    elastics = []
+    for i in range(len(particles)-1):
+        elastics.append(ps.makeElastic(particles[i],particles[i+1],E,A,particles[i].distanceTo(particles[i+1]),t0).setFixedTension(fixTension))
+    if closed :
+        elastics.append(ps.makeElastic(particles[-1],particles[0],E,A,particles[-1].distanceTo(particles[0]),t0).setFixedTension(fixTension))
+        
+    return (particles, elastics)
+
+    
+def makeCablesFromList( ps, pts, E = 10, A = 123, t0 = 0, closed = False, fixTension = False, mergeExistingParticles = True):
+    
+    particles = []
+    
+    # create particles depending on whether there is need to merge the particles that are equal
+    for v in pts : 
+        if mergeExistingParticles :
+            particles.append(ps.makeParticleNonDuplicate(v))
+        else :
+            particles.append(ps.makeParticle(v))
+    
+    cables = []
+    for i in range(len(particles)-1):
+        cables.append(ps.makeCable(particles[i],particles[i+1],E,A,particles[i].distanceTo(particles[i+1]),t0).setFixedTension(fixTension))
+    if closed :
+        cables.append(ps.makeCable(particles[-1],particles[0],E,A,particles[-1].distanceTo(particles[0]),t0).setFixedTension(fixTension))
+     
+    return (particles, cables)
+
+
+#def makeBendingFromGrid( ps, grid, mergeExistingParticles = True):
+#    
+#    
+#    pass
+
+
+def makeBendingsFromList( ps, pts, E = 28000e06, I =7e-09 , S =2.01062e-04 , closed = False, mergeExistingParticles = True):
+    
+    particles = []
+    
+    # create particles depending on whether there is need to merge the particles that are equal
+    for v in pts : 
+        if mergeExistingParticles :
+            particles.append(ps.makeParticleNonDuplicate(v))
+        else :
+            particles.append(ps.makeParticle(v))
+    
+    bendings = []
+    for i in range(len(particles)-2):
+        bendings.append(ps.makeBending(particles[i],particles[i+1],particles[i+2],E,I,S))
+    if closed : # add two bending elements for smooth circle
+        bendings.append(ps.makeBending(particles[-2],particles[-1],particles[0],E,I,S))
+        bendings.append(ps.makeBending(particles[-1],particles[0],particles[1],E,I,S))
+    
+    return (particles, bendings)
+
+
+def makeAttractionsFromList( ps, pts, k=10, minDist = 0.01, mergeExistingParticles = True):
+    
+    particles = []
+    
+    # create particles depending on whether there is need to merge the particles that are equal
+    for v in pts : 
+        if mergeExistingParticles :
+            particles.append(ps.makeParticleNonDuplicate(v))
+        else :
+            particles.append(ps.makeParticle(v))
+    
+    attractions = []
+    for i in range(len(particles)-1):
+        attractions.append(ps.makeAttraction(particles[0],particles[i+1],k, minDist))
+    
+    return (particles, attractions)
+
+
+def makeLoadsFromList( ps, pts, dir = Point3D(0,0,-1), scale = 100, mergeExistingParticles = True):
+    
+    particles = []
+    
+    # create particles depending on whether there is need to merge the particles that are equal
+    for v in pts : 
+        if mergeExistingParticles :
+            particles.append(ps.makeParticleNonDuplicate(v))
+        else :
+            particles.append(ps.makeParticle(v))
+    
+    loads = []
+    for i in range(len(particles)):
+        loads.append(ps.makeLoad(particles[i],dir,scale*dir.length()))
+    
+    return (particles, loads)
+    
