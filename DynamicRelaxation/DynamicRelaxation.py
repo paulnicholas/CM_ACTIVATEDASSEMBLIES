@@ -214,6 +214,7 @@ class ParticleSystem(object):
         self.integrator.step( t )
         
         tmp = self.computeKinetic()
+        print 'kinetic energy: '+str(tmp)
         
         if (tmp < self.prevKinetic - 10e-04) :
             
@@ -315,8 +316,8 @@ class ParticleSystem(object):
             for p in self.particles:  p.force = p.force + self.gravity
             
         # apply drag
-        if not self.drag.isZero() : 
-			for p in self.particles:  p.force = p.force + p.velocity.multiplyBy(-self.drag) 
+        if not self.drag == 0 : 
+            for p in self.particles:  p.force = p.force + p.velocity.multiplyBy(-self.drag) 
         
         for  f in self.springs: f.apply()
         for  f in self.attractions: f.apply()
@@ -388,8 +389,9 @@ class VerletIntegrator(Integrator):
         
     def step(self, t ):
         
-        self._ps.clearForces()
-        self._ps.applyForces()
+        #self._ps.clearForces()
+        #self._ps.applyForces()
+        # TODO should initialize the forces for the 1st time step (not really important for DR)
         
         halftt = 0.5/(t*t)
         halft = 0.5/t
@@ -399,16 +401,15 @@ class VerletIntegrator(Integrator):
                 
                 a = p.force / p.mass
                 
+                # half step with previous acceleration
+                p.velocity = p.velocity + a.multiplyBy(halft)
+
                 # update position
                 p.position = p.position + p.velocity.divideBy(t)
-                p.position = p.position + a.divideBy(halftt)
                 
-                # half step with previous acceleration
-                p.velocity = p.velocity + a.divideBy(halft)
-                
-		# compute forces with new position
-		self._ps.clearForces()
-		self._ps.applyForces()
+        # compute forces with new position
+        self._ps.clearForces()
+        self._ps.applyForces()
         
         for p in self._ps.particles:
             if p.isFree():
@@ -417,7 +418,7 @@ class VerletIntegrator(Integrator):
                 a = p.force / p.mass
                 
                 # half step with new acceleration
-                p.velocity = p.velocity + a.divideBy(halft)
+                p.velocity = p.velocity + a.multiplyBy(halft)
                 
         self.satisfyConstraints()
         
@@ -468,7 +469,7 @@ class Force(object):
       
     def apply(self):
         pass
-
+    
     def getStress(self):
         pass
           
@@ -578,7 +579,7 @@ class Elastic(Force) :
     def setPrestress( self, _t ) : self.t0 = _t; return self  
     
     def getStress(self): return self.stress
-
+    
     def setFixedTension(self, bool) : self.fixTension = bool; return self 
     
     
@@ -611,8 +612,8 @@ class Elastic(Force) :
             # if tension fixed prestress only
             else: elasticForce = t0
             
-			self.stress = elasticForce
-
+            self.stress = elasticForce
+            
             a2b = a2b.multiplyBy(elasticForce)
             
             if ( self.a.isFree() ):
@@ -753,10 +754,10 @@ class Attraction(Force):
         self.on = True
         self.distanceMin = _distanceMin
         self.distanceMinSquared = _distanceMin*_distanceMin
-
+    
     def setA( self, p ): self.a = p; return self 
     def setB( self, p ): self.b = p; return self 
-
+    
     def getMinimumDistance(self): return self.distanceMin
     def setMinimumDistance( self, d ):
         self.distanceMin = d
@@ -770,7 +771,7 @@ class Attraction(Force):
     
     def getOneEnd(self): return self.a; return self 
     def getTheOtherEnd(self): return self.b; return self 
-
+    
     def apply(self):
         if ( self.on and ( self.a.isFree() or self.b.isFree() ) ):
             
@@ -855,7 +856,7 @@ def makeSpringsFromList( ps, pts, k = 10, l0 = 0, closed = False, mergeExistingP
         
     return (particles, springs)
 
-    
+
 def makeElasticsFromList( ps, pts, E = 10, A = 123, t0 = 0, closed = False, fixTension = False, mergeExistingParticles = True):
     
     particles = []
@@ -875,7 +876,7 @@ def makeElasticsFromList( ps, pts, E = 10, A = 123, t0 = 0, closed = False, fixT
         
     return (particles, elastics)
 
-    
+
 def makeCablesFromList( ps, pts, E = 10, A = 123, t0 = 0, closed = False, fixTension = False, mergeExistingParticles = True):
     
     particles = []
@@ -974,7 +975,7 @@ def makeConstraintsFromList( ps, pts, normal = Point3D(0,0,1), mergeExistingPart
         p.constrained(normal)
     
     if len(particles) > 0:
-		ps.hasConstrainedParticles = True;
+        ps.hasConstrainedParticles = True;
     
     return particles
 
