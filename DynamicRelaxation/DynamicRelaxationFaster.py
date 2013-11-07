@@ -10,116 +10,107 @@ import math
 
 class Point3D(object):
     
-    def __init__(self,*args):
-        if len(args) == 0:
-            self.init(0,0,0)
-        elif len(args) == 1:
-            v = args[0]
-            self.init(v.x(),v.y(),v.z())
-        elif len(args) == 3:
-            self.init(args[0],args[1],args[2])
+    def __init__(self,x,y,z):
+        self.x = x
+        self.y = y
+        self.z = z
+                
+    def __str__(self): return '['+str(self.x)+', '+str(self.y)+', '+str(self.z)+']'
         
-    def init(self,x,y,z):
-        self._x = x
-        self._y = y
-        self._z = z
+    def set(self,x,y,z):
+        self.x = x
+        self.y = y
+        self.z = z
+        return self
         
-    def __str__(self): return '['+str(self._x)+', '+str(self._y)+', '+str(self._z)+']'
-    def x(self): return self._x
-    def y(self): return self._y
-    def z(self): return self._z
-        
-    def set(self,*args):
-        if len(args)==1:
-            v = args[0]
-            self.set(v.x(),v.y(),v.z()); return self 
-        elif len(args)==3: 
-            self._x = args[0]; self._y = args[1]; self._z = args[2]; return self
-        
-    def setX(self,x):self._x = x; return self 
-    def setY(self,y):self._y = y; return self 
-    def setZ(self,z):self._z = z; return self 
+    def setX(self,x):self.x = x; return self 
+    def setY(self,y):self.y = y; return self 
+    def setZ(self,z):self.z = z; return self 
     
     
-    def __add__(self, p ): return Point3D(self.x() + p.x(),self.y() + p.y(),self.z() + p.z())
-    def addBy(self, a,b,c ): return Point3D(self._x + a, self._y + b, self._z + c)
+    def __add__(self, p ): return Point3D(self.x + p.x,self.y + p.y,self.z + p.z)
+    def addBy(self, a,b,c ): return Point3D(self.x + a, self.y + b, self.z + c)
+    def addByMute(self, a,b,c ): return self.set(self.x + a, self.y + b, self.z + c)
     
-    def __sub__(self, p ): return Point3D(self.x() - p.x(),self.y() - p.y(),self.z() - p.z())
-    def subtractBy(self, a, b, c): return Point3D(self._x - a, self._y - b, self._z - c)
+    def __sub__(self, p ): return Point3D(self.x - p.x,self.y - p.y,self.z - p.z)
+    def subtractBy(self, a, b, c): return Point3D(self.x - a, self.y - b, self.z - c)
+    def subtractByMute(self, a,b,c ): return self.set(self.x - a, self.y - b, self.z - c)
     
-    def __mul__(self,  v ): return Point3D( self._x * v.x(),self._y * v.y(), self._z * v.z())
-    def multiplyBy(self,  f ): return Point3D(self._x * f, self._y * f, self._z * f)
+    def __mul__(self,  v ): return Point3D( self.x * v.x,self.y * v.y, self.z * v.z)
+    def multiplyBy(self,  f ): return Point3D(self.x * f, self.y * f, self.z * f)
+    def multiplyByMute(self, a,b,c ): return self.set(self.x * a, self.y * b, self.z * c)
     
-    def __div__(self,  v ): return Point3D( self._x / v.x(),self._y / v.y(), self._z / v.z())
-    def divideBy(self,  f ): return Point3D(self._x / f, self._y / f, self._z/ f)
+    def __div__(self,  v ): return Point3D( self.x / v.x,self.y / v.y, self.z / v.z)
+    def divideBy(self,  f ): return Point3D(self.x / f, self.y / f, self.z/ f)
+    def divideByMute(self, a,b,c ): self.x / a; self.y / b; self.z / c; return self
     
-    def distanceTo(self, p ): return math.sqrt( self.distanceSquaredTo( p ) )
-    def distanceSquaredTo(self, p ): d = self - p; return d.dot(d)
+    def distanceTo(self, p ): return math.sqrt( self.distanceToSq( p ) )
+    def distanceToSq(self, p ): d = self - p; return d.dot(d)
     
+    def dot(self, p ): return self.x * p.x + self.y * p.y + self.z * p.z
+    def length(self): return math.sqrt( self.lengthSq() )
+    def lengthSq(self): return self.dot(self) 
     
-    def dot(self, p ): return self._x * p.x() + self._y * p.y() + self._z * p.z()
-    def length(self): return math.sqrt( self.lengthSquared() )
-    def lengthSquared(self): return self.dot(self) 
-    
-    def normalize(self): return Point3D(self).divideBy(self.length())
+    def normalize(self): return Point3D(self.x,self.y,self.z).divideBy(self.length())
+    def normalizeMute(self): l = self.length(); return self.divideByMute(l,l,l)
       
-    def clear(self):self._x = 0; self._y = 0; self._z = 0; return self
+    def clear(self):self.x = 0; self.y = 0; self.z = 0; return self
     
     
-    def __str__(self): return "(" + str(self._x) + ", " + str(self._y) + ", " + str(self._z) + ")" 
+    def __str__(self): return "(" + str(self.x) + ", " + str(self.y) + ", " + str(self.z) + ")" 
     
-    def __neg__(self): return Point3D(-self.x(),-self.y(),-self.z())
-    def cross(self, p ): return Point3D(     self.y() * p.z() - self.z() * p.y(), self.z() * p.x() - self.x() * p.z(), self.x() * p.y() - self.y() * p.x() )
-    #def cross(self, p ): return Point3D(     self.y() * p.z() - self.z() * p.y(), self.x() * p.z() - self.z() * p.x(), self.x() * p.y() - self.y() * p.x() )
+    def __neg__(self): return Point3D(-self.x,-self.y,-self.z)
+    def cross(self, p ): return Point3D(     self.y * p.z - self.z * p.y, self.z * p.x - self.x * p.z, self.x * p.y - self.y * p.x )
+    #def cross(self, p ): return Point3D(     self.y * p.z - self.z * p.y, self.x * p.z - self.z * p.x, self.x * p.y - self.y * p.x )
     
-    def isZero(self): return self._x == 0 and self._y == 0 and self._z == 0;
-    def __eq__(self,p): return self._x == p.x() and self._y == p.y() and self._z == p.z();
-    def __ne__(self,p): return self._x != p.x() or self._y != p.y() or self._z != p.z();
+    def isZero(self): return self.x == 0 and self.y == 0 and self.z == 0;
+    def __eq__(self,p): return self.x == p.x and self.y == p.y and self.z == p.z;
+    def __ne__(self,p): return self.x != p.x or self.y != p.y or self.z != p.z;
     
     def distanceSegmentSq(self, p, q) :
-        v = q - p
-        w = self - p
+        v = Point3D(q.x,q.y,q.z).substractByMute(p.x,p.y,p.z)
+        w = Point3D(self.x,self.y,self.z).substractByMute(p.x,p.y,p.z)
         
         c1 = w.dot(v)
         if ( c1 <= 0 ):
-            return self.distanceSquaredTo(p);
+            return self.distanceToSq(p);
         
         c2 = v.dot(v)
         if ( c2 <= c1 ):
-            return self.distanceSquaredTo(q);
+            return self.distanceToSq(q);
             
-        b = c1 / c2
-        Pb =  p + v.multiplyBy(b);
-        return self.distanceSquaredTo(Pb);
+        b = c1 / c2;
+        Pb = v.multiplyByMute(b,b,b).addByMute(p.x,p.y,p.z);
+        return self.distanceToSq(Pb);
     
     
     
     def distanceLineSq(self, p, q) :
-        v = q - p
-        w = self - p
+        v = Point3D(q.x,q.y,q.z).substractByMute(p.x,p.y,p.z)
+        w = Point3D(self.x,self.y,self.z).substractByMute(p.x,p.y,p.z)
         c1 = w.dot(v);
         c2 = v.dot(v);
         b = c1 / c2;
-        Pb =  p + v.multiplyBy(b);
-        return self.distanceSquaredTo(Pb);
+        Pb = v.multiplyByMute(b,b,b).addByMute(p.x,p.y,p.z);
+        return self.distanceToSq(Pb);
     
     
     #     * project on plane     * assume normalized direction     * @param dir
-    def project(self, dir) : t = -self.dot(dir); return Point3D(self + dir.multiplyBy(t))
+    def project(self, dir) : t = -self.dot(dir); return self.addByMute(c.x*t,c.y*t,c.z*t)
     
     
     #     * project on vector     * assume normalized direction     * @param dir
-    def projectDir(self, dir) : t = self.dot(dir); return Point3D(dir.multiplyBy(t))
+    def projectDir(self, dir) : t = self.dot(dir); self.x = dir.x*t; self.y = dir.y*t; self.z = dir.z*t; return self
 
 class Particle(object):
     
     def __init__(self,  m ):
-        self.position = Point3D();
-        self.velocity = Point3D();
-        self.force = Point3D();
+        self.position = Point3D(0,0,0);
+        self.velocity = Point3D(0,0,0);
+        self.force = Point3D(0,0,0);
         self.mass = Point3D(m,m,m);
         self.fixed = False;
-        self.constraint = Point3D();
+        self.constraint = Point3D(0,0,0);
         self.constrained = False;
     
     def __str__(self):
@@ -133,7 +124,7 @@ class Particle(object):
     def makeFree(self): self.fixed = False
     def isFree(self): return not self.fixed
     
-    def massAverage(self): return (self.mass.x() + self.mass.y() + self.mass.z())/3
+    def massAverage(self): return (self.mass.x + self.mass.y + self.mass.z)/3
     def setMass(self, m ): self.mass = Point3D(m,m,m)
     
     def constrained(self, v) : 
@@ -161,10 +152,10 @@ class ParticleSystem(object):
     VERLET = 2
     EULER = 3
     
-    #DEFAULT_GRAVITY = Point3D()
+    #DEFAULT_GRAVITY = Point3D(0,0,0)
     #DEFAULT_DRAG = 0.001  
     
-    def __init__(self, gravity = Point3D(), drag = 0.0001):
+    def __init__(self, gravity = Point3D(0,0,0), drag = 0.0001):
         self.init()
         self.gravity = gravity
         self.drag = drag
@@ -312,11 +303,11 @@ class ParticleSystem(object):
     def applyForces(self) :
         
         if not self.gravity.isZero() : 
-            for p in self.particles:  p.force = p.force + self.gravity
+            for p in self.particles:  p.force.addByMute(self.gravity)
             
         # apply drag
         if not self.drag.isZero() : 
-			for p in self.particles:  p.force = p.force + p.velocity.multiplyBy(-self.drag) 
+			for p in self.particles:  p.force.addByMute(p.velocity.x-self.drag,p.velocity.y-self.drag,p.velocity.z-self.drag) 
         
         for  f in self.springs: f.apply()
         for  f in self.attractions: f.apply()
@@ -409,7 +400,7 @@ class VerletIntegrator(Integrator):
 		# compute forces with new position
 		self._ps.clearForces()
 		self._ps.applyForces()
-        
+
         for p in self._ps.particles:
             if p.isFree():
                 
@@ -418,7 +409,7 @@ class VerletIntegrator(Integrator):
                 
                 # half step with new acceleration
                 p.velocity = p.velocity + a.divideBy(halft)
-                
+               
         self.satisfyConstraints()
         
     def satisfyConstraints(self) :
@@ -456,8 +447,8 @@ class EulerIntegrator(Integrator):
         
         for p in self._ps.particles:
             if p.isFree():
-                p.velocity = p.velocity + Point3D( p.force.x()/(p.mass.x()*t), p.force.y()/(p.mass.y()*t), p.force.z()/(p.mass.z()*t) )
-                p.position = p.position + p.velocity.divideBy(t)
+                p.velocity.addByMute(p.force.x/(p.mass.x*t), p.force.y/(p.mass.y*t), p.force.z/(p.mass.z*t) )
+                p.position.addByMute(p.velocity.x/t,p.velocity.y/t,p.velocity.z/t)
 
 #@@@@@@@@@@@@@@@@
 
@@ -519,9 +510,9 @@ class Spring(Force):
             a2bDistance = math.sqrt( a2b.dot(a2b) )
         
             if ( a2bDistance == 0 ):
-                a2b = Point3D()
+                a2b = Point3D(0,0,0)
             else :
-                a2b = a2b.multiplyBy(a2bDistance)
+                a2b.multiplyByMute(a2bDistance)
                 
             # spring force is proportional to how much it stretched
             springForce = -( a2bDistance - self.l0 ) * self.k
@@ -536,12 +527,12 @@ class Spring(Force):
             # forceB is same as forceA in opposite direction
             r = springForce + dampingForce
             
-            a2b = a2b.multiplyBy(r)
+            a2b.multiplyByMute(r)
             
-            if ( self.a.isFree() ):
-                self.a.force = self.a.force + a2b
-            if (self. b.isFree() ):
-                self.b.force = self.b.force - a2b
+			if ( self.a.isFree() ):
+				self.a.force.addByMute(a2b.x,a2b.y,a2b.z)
+			if (self. b.isFree() ):
+				self.b.force.addByMute(-a2b.x,-a2b.y,-a2b.z)
 
 class Elastic(Force) :
     # E module of elastic material   
@@ -597,9 +588,9 @@ class Elastic(Force) :
             a2bDistance = math.sqrt( a2b.dot(a2b) )
             
             if ( a2bDistance == 0 ):
-                a2b = Point3D()
+                a2b = Point3D(0,0,0)
             else :
-                a2b = a2b.divideBy( a2bDistance)
+                a2b.divideByMute( a2bDistance)
             
             # elastic force is proportional to how much it stretched 
             # t = EA/l0 * (l-l0) + t0  
@@ -613,14 +604,12 @@ class Elastic(Force) :
             
 			self.stress = elasticForce
 
-            a2b = a2b.multiplyBy(elasticForce)
+            a2b.multiplyByMute(elasticForce)
             
-            if ( self.a.isFree() ):
-                self.a.force = self.a.force + a2b
-            
-            # forceB is same as forceA in opposite direction
-            if ( self.b.isFree() ):
-                self.b.force = self.b.force - a2b
+			if ( self.a.isFree() ):
+				self.a.force.addByMute(a2b.x,a2b.y,a2b.z)
+			if (self. b.isFree() ):
+				self.b.force.addByMute(-a2b.x,-a2b.y,-a2b.z)
 
 class Cable(Elastic) :
     
@@ -633,14 +622,13 @@ class Cable(Elastic) :
             
             a2b = self.a.position - self.b.position
             
-            
             a2bDistance = math.sqrt( a2b.dot(a2b) )
             
             # check if cable is slack
             if ( a2bDistance >= self.l0 ) :
                 slack = False;
                 
-                a2b = a2b.divideBy(a2bDistance)
+                a2b.divideByMute(a2bDistance)
                 
                 # elastic force is proportional to how much it stretched 
                 # t = EA/l0 * (l-l0) + t0  
@@ -655,14 +643,12 @@ class Cable(Elastic) :
                 
                 self.stress = elasticForce
                 
-                a2b = a2b.multiplyBy( elasticForce)
+                a2b.multiplyByMute( elasticForce)
                 
-                if ( self.a.isFree() ):
-                    self.a.force = self.a.force + a2b
-                
-                # forceB is same as forceA in opposite direction
-                if ( self.b.isFree() ):
-                    self.b.force = self.b.force - a2b
+				if ( self.a.isFree() ):
+					self.a.force.addByMute(a2b.x,a2b.y,a2b.z)
+				if (self. b.isFree() ):
+					self.b.force.addByMute(-a2b.x,-a2b.y,-a2b.z)
             else :
                 slack = True;
                 self.stress = 0
@@ -716,8 +702,8 @@ class Bending(Force):
             Tbc = bc.multiplyBy(self.ES*(1/self.L0bc - 1/Lbc));
             
             # compute moment
-            Fab = Point3D()
-            Fbc = Point3D()
+            Fab = Point3D(0,0,0)
+            Fbc = Point3D(0,0,0)
             
             if (self.a.position.distanceLineSq(self.b.position,self.c.position) > 10e-8) :
                 Mb = ab.cross(bc).multiplyBy(2*self.EI/(Lac*Lab*Lbc));
@@ -732,16 +718,25 @@ class Bending(Force):
             # apply
             
             if ( self.a.isFree() ) :
-                self.a.force = self.a.force + Tab
-                self.a.force = self.a.force + Fab
+                #self.a.force = self.a.force + Tab
+                self.a.force.addByMute(Tab.x,Tab.y,Tab.z)
+
+                #self.a.force = self.a.force + Fab
+                self.a.force.addByMute(Fab.x,Fab.y,Fab.z)
             
             if ( self.b.isFree() ) :
-                self.b.force = self.b.force - Tab + Tbc 
-                self.b.force = self.b.force - Fab - Fbc 
+                #self.b.force = self.b.force - Tab + Tbc 
+                self.b.force.addByMute(-Tab.x + Tbc.x,-Tab.y + Tbc.y,-Tab.z + Tbc.z)
+ 
+                #self.b.force = self.b.force - Fab - Fbc 
+                self.b.force.addByMute(-Fab.x - Fbc.x,-Fab.y - Fbc.y,-Fab.z - Fbc.z)
             
             if ( self.c.isFree()) :
-                self.c.force = self.c.force - Tbc
-                self.c.force = self.c.force + Fbc
+                #self.c.force = self.c.force - Tbc
+                self.c.force.addByMute(-Tbc.x,-Tbc.y,-Tbc.z)
+
+                #self.c.force = self.c.force + Fbc
+                self.a.force.addByMute(Fbc.x,Fbc.y,Fbc.z)
 
 class Attraction(Force):
     
@@ -787,16 +782,16 @@ class Attraction(Force):
             length = math.sqrt( a2bDistanceSquared );
             
             # make unit vector
-            a2b = a2b.divideBy(length) 
+            a2b.divideByMute(length) 
             
             # multiply by force 
-            a2b = a2b.multiplyBy(force) 
+            a2b.multiplyByMute(force) 
             
             # apply
-            if ( self.a.isFree() ):
-                self.a.force = self.a.force - a2b
-            if ( self.b.isFree() ):
-                self.b.force = self.b.force + a2b
+			if ( self.a.isFree() ):
+				self.a.force.addByMute(-a2b.x,-a2b.y,-a2b.z)
+			if (self. b.isFree() ):
+				self.b.force.addByMute(a2b.x,a2b.y,a2b.z)
 
 class Load(Force):
     
@@ -823,7 +818,7 @@ class Load(Force):
         load = self.dir.multiplyBy(self.force) 
         
         if ( self.on and self.a.isFree() ):
-                self.a.force = self.a.force + load
+                self.a.force.addByMute(load.x,load.y,load.z)
 
 
 
@@ -832,7 +827,7 @@ class Load(Force):
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-
+    
 # constructor functions
 
 
