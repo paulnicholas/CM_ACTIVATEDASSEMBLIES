@@ -10,6 +10,8 @@ import math
 
 class Point3D(object):
     
+    EPSILON = 1e-10
+    
     def __init__(self,*args):
         if len(args) == 0:
             self.init(0,0,0)
@@ -73,8 +75,8 @@ class Point3D(object):
     #def cross(self, p ): return Point3D(     self.y() * p.z() - self.z() * p.y(), self.x() * p.z() - self.z() * p.x(), self.x() * p.y() - self.y() * p.x() )
     
     def isZero(self): return self._x == 0 and self._y == 0 and self._z == 0;
-    def __eq__(self,p): return self._x == p.x() and self._y == p.y() and self._z == p.z();
-    def __ne__(self,p): return self._x != p.x() or self._y != p.y() or self._z != p.z();
+    def __eq__(self,p): return math.fabs(self._x - p.x()) < Point3D.EPSILON and math.fabs(self._y - p.y()) < Point3D.EPSILON and math.fabs(self._z - p.z()) < Point3D.EPSILON
+    def __ne__(self,p): return math.fabs(self._x - p.x()) >= Point3D.EPSILON or math.fabs(self._y - p.y()) >= Point3D.EPSILON or math.fabs(self._z - p.z()) >= Point3D.EPSILON
     
     def distanceSegmentSq(self, p, q) :
         v = q - p
@@ -104,11 +106,11 @@ class Point3D(object):
         return self.distanceSquaredTo(Pb);
     
     
-    #     * project on plane     * assume normalized direction     * @param dir
-    def project(self, dir) : t = -self.dot(dir); return Point3D(self + dir.multiplyBy(t))
+    # project on plane assuming normalized direction     
+    def project(self, dir) : t = -self.dot(dir); return Point3D(self) + dir.multiplyBy(t)
     
     
-    #     * project on vector     * assume normalized direction     * @param dir
+    # project on vector assuming normalized direction
     def projectDir(self, dir) : t = self.dot(dir); return Point3D(dir.multiplyBy(t))
 
 class Particle(object):
@@ -136,14 +138,14 @@ class Particle(object):
     def massAverage(self): return (self.mass.x() + self.mass.y() + self.mass.z())/3
     def setMass(self, m ): self.mass = Point3D(m,m,m)
     
-    def constrained(self, v) : 
+    def defineConstrain(self, v) : 
         self.constraint = v.normalize()
         self.constrained = True
         
     def getConstraint(self) : return self.constraint
     def isConstrained(self): return self.constrained
         
-    def constraint(self): self.force.project(constraint)
+    def applyConstrain(self): self.force = self.force.project(self.constraint)
         
     def update(self): 
         pass
@@ -233,6 +235,7 @@ class ParticleSystem(object):
     
     def findParticleEqualToPoint(self,v) :
         for p in self.particles :
+            #print str(p.position) + str (v) 
             if p.position == v :
                 return p
         return None
@@ -330,7 +333,9 @@ class ParticleSystem(object):
         if (self.hasConstrainedParticles) :
             for p in self.particles: 
                 #p.update() # HAS NO EFFECT....
-                if p.isConstrained(): p.constraint()
+                if p.isConstrained():
+                    p.applyConstrain()
+                    
     
     def clearForces(self) :
         for p in self.particles: p.force.clear()
@@ -972,7 +977,7 @@ def makeConstraintsFromList( ps, pts, normal = Point3D(0,0,1), mergeExistingPart
             particles.append(ps.makeParticle(v))
     
     for p in particles:
-        p.constrained(normal)
+        p.defineConstrain(normal)
     
     if len(particles) > 0:
         ps.hasConstrainedParticles = True;
