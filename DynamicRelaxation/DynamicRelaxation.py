@@ -22,12 +22,8 @@ class Point3D(object):
     def y(self): return self._y
     def z(self): return self._z
         
-    def set(self,*args):
-        if len(args)==1:
-            v = args[0]
-            self.set(v.x(),v.y(),v.z()); return self 
-        elif len(args)==3: 
-            self._x = args[0]; self._y = args[1]; self._z = args[2]; return self
+    def set(self,x,y,z): 
+        self._x = x; self._y = y; self._z = z; return self
         
     def setX(self,x):self._x = x; return self 
     def setY(self,y):self._y = y; return self 
@@ -245,7 +241,7 @@ class ParticleSystem(object):
         elif len(args)==1:
             v = args[0]
             p = Particle( 1.0 )
-            p.position.set( v )
+            p.position.set( v.x(),v.y(),v.z() )
             self.particles.append( p )
             return p
         #def makeParticle( self, x, y, z ) :
@@ -435,8 +431,8 @@ class VerletIntegrator(Integrator):
                     d2 = d1.length() # potential to optimize with taylor expansion
                     diff = (d2-f.l0())/d2;
                     d1.multiplyBy(.5 * diff);
-                    f.getOneEnd().position.set(a - d1);
-                    f.getTheOtherEnd().position.set(a + d1);
+                    f.getOneEnd().position = a - d1;
+                    f.getTheOtherEnd().position = a + d1;
                     
                     if diff<VerletIntegrator.EPSILON:
                         continue
