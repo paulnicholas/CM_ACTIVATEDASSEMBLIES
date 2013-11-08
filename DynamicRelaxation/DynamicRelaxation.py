@@ -10,16 +10,9 @@ import math
 
 class Point3D(object):
     
-    def __init__(self,*args):
-        if len(args) == 0:
-            self.init(0,0,0)
-        elif len(args) == 1:
-            v = args[0]
-            self.init(v.x(),v.y(),v.z())
-        elif len(args) == 3:
-            self.init(args[0],args[1],args[2])
-        
-    def init(self,x,y,z):
+    EPSILON = 1e-10
+    
+    def __init__(self,x,y,z):
         self._x = x
         self._y = y
         self._z = z
@@ -29,12 +22,8 @@ class Point3D(object):
     def y(self): return self._y
     def z(self): return self._z
         
-    def set(self,*args):
-        if len(args)==1:
-            v = args[0]
-            self.set(v.x(),v.y(),v.z()); return self 
-        elif len(args)==3: 
-            self._x = args[0]; self._y = args[1]; self._z = args[2]; return self
+    def set(self,x,y,z): 
+        self._x = x; self._y = y; self._z = z; return self
         
     def setX(self,x):self._x = x; return self 
     def setY(self,y):self._y = y; return self 
@@ -51,7 +40,7 @@ class Point3D(object):
     def multiplyBy(self,  f ): return Point3D(self._x * f, self._y * f, self._z * f)
     
     def __div__(self,  v ): return Point3D( self._x / v.x(),self._y / v.y(), self._z / v.z())
-    def divideBy(self,  f ): return Point3D(self._x / f, self._y / f, self._z/ f)
+    def divideBy(self,  f ): return Point3D(self._x / f, self._y / f, self._z / f)
     
     def distanceTo(self, p ): return math.sqrt( self.distanceSquaredTo( p ) )
     def distanceSquaredTo(self, p ): d = self - p; return d.dot(d)
@@ -61,7 +50,7 @@ class Point3D(object):
     def length(self): return math.sqrt( self.lengthSquared() )
     def lengthSquared(self): return self.dot(self) 
     
-    def normalize(self): return Point3D(self).divideBy(self.length())
+    def normalize(self): return Point3D(self._x,self._y,self._z).divideBy(self.length())
       
     def clear(self):self._x = 0; self._y = 0; self._z = 0; return self
     
@@ -73,8 +62,8 @@ class Point3D(object):
     #def cross(self, p ): return Point3D(     self.y() * p.z() - self.z() * p.y(), self.x() * p.z() - self.z() * p.x(), self.x() * p.y() - self.y() * p.x() )
     
     def isZero(self): return self._x == 0 and self._y == 0 and self._z == 0;
-    def __eq__(self,p): return self._x == p.x() and self._y == p.y() and self._z == p.z();
-    def __ne__(self,p): return self._x != p.x() or self._y != p.y() or self._z != p.z();
+    def __eq__(self,p): return math.fabs(self._x - p.x()) < Point3D.EPSILON and math.fabs(self._y - p.y()) < Point3D.EPSILON and math.fabs(self._z - p.z()) < Point3D.EPSILON
+    def __ne__(self,p): return math.fabs(self._x - p.x()) >= Point3D.EPSILON or math.fabs(self._y - p.y()) >= Point3D.EPSILON or math.fabs(self._z - p.z()) >= Point3D.EPSILON
     
     def distanceSegmentSq(self, p, q) :
         v = q - p
@@ -104,22 +93,22 @@ class Point3D(object):
         return self.distanceSquaredTo(Pb);
     
     
-    #     * project on plane     * assume normalized direction     * @param dir
-    def project(self, dir) : t = -self.dot(dir); return Point3D(self + dir.multiplyBy(t))
+    # project on plane assuming normalized direction 
+    def project(self, dir) : t = -self.dot(dir); return Point3D(self._x,self._y,self._z) + dir.multiplyBy(t)
     
     
-    #     * project on vector     * assume normalized direction     * @param dir
-    def projectDir(self, dir) : t = self.dot(dir); return Point3D(dir.multiplyBy(t))
+    # project on vector assuming normalized direction
+    def projectDir(self, dir) : t = self.dot(dir); return Point3D(dir._x*t,dir._y*t,dir._z*t)
 
 class Particle(object):
     
     def __init__(self,  m ):
-        self.position = Point3D();
-        self.velocity = Point3D();
-        self.force = Point3D();
+        self.position = Point3D(0,0,0);
+        self.velocity = Point3D(0,0,0);
+        self.force = Point3D(0,0,0);
         self.mass = Point3D(m,m,m);
         self.fixed = False;
-        self.constraint = Point3D();
+        self.constraint = Point3D(0,0,0);
         self.constrained = False;
     
     def __str__(self):
@@ -136,14 +125,14 @@ class Particle(object):
     def massAverage(self): return (self.mass.x() + self.mass.y() + self.mass.z())/3
     def setMass(self, m ): self.mass = Point3D(m,m,m)
     
-    def constrained(self, v) : 
+    def defineConstrain(self, v) : 
         self.constraint = v.normalize()
         self.constrained = True
         
     def getConstraint(self) : return self.constraint
     def isConstrained(self): return self.constrained
         
-    def constraint(self): self.force.project(constraint)
+    def applyConstrain(self): self.force = self.force.project(self.constraint)
         
     def update(self): 
         pass
@@ -161,10 +150,10 @@ class ParticleSystem(object):
     VERLET = 2
     EULER = 3
     
-    #DEFAULT_GRAVITY = Point3D()
+    #DEFAULT_GRAVITY = Point3D(0,0,0)
     #DEFAULT_DRAG = 0.001  
     
-    def __init__(self, gravity = Point3D(), drag = 0.0001):
+    def __init__(self, gravity = Point3D(0,0,0), drag = 0.0001):
         self.init()
         self.gravity = gravity
         self.drag = drag
@@ -233,6 +222,7 @@ class ParticleSystem(object):
     
     def findParticleEqualToPoint(self,v) :
         for p in self.particles :
+            #print str(p.position) + str (v) 
             if p.position == v :
                 return p
         return None
@@ -251,7 +241,7 @@ class ParticleSystem(object):
         elif len(args)==1:
             v = args[0]
             p = Particle( 1.0 )
-            p.position.set( v )
+            p.position.set( v.x(),v.y(),v.z() )
             self.particles.append( p )
             return p
         #def makeParticle( self, x, y, z ) :
@@ -330,7 +320,9 @@ class ParticleSystem(object):
         if (self.hasConstrainedParticles) :
             for p in self.particles: 
                 #p.update() # HAS NO EFFECT....
-                if p.isConstrained(): p.constraint()
+                if p.isConstrained():
+                    p.applyConstrain()
+                    
     
     def clearForces(self) :
         for p in self.particles: p.force.clear()
@@ -439,8 +431,8 @@ class VerletIntegrator(Integrator):
                     d2 = d1.length() # potential to optimize with taylor expansion
                     diff = (d2-f.l0())/d2;
                     d1.multiplyBy(.5 * diff);
-                    f.getOneEnd().position.set(a - d1);
-                    f.getTheOtherEnd().position.set(a + d1);
+                    f.getOneEnd().position = a - d1;
+                    f.getTheOtherEnd().position = a + d1;
                     
                     if diff<VerletIntegrator.EPSILON:
                         continue
@@ -520,7 +512,7 @@ class Spring(Force):
             a2bDistance = math.sqrt( a2b.dot(a2b) )
         
             if ( a2bDistance == 0 ):
-                a2b = Point3D()
+                a2b = Point3D(0,0,0)
             else :
                 a2b = a2b.multiplyBy(a2bDistance)
                 
@@ -598,7 +590,7 @@ class Elastic(Force) :
             a2bDistance = math.sqrt( a2b.dot(a2b) )
             
             if ( a2bDistance == 0 ):
-                a2b = Point3D()
+                a2b = Point3D(0,0,0)
             else :
                 a2b = a2b.divideBy( a2bDistance)
             
@@ -670,10 +662,10 @@ class Cable(Elastic) :
 
 class Bending(Force):
     
-    def __init__(  self, a,  b,  c,  E,  I,  S )    :
-        self.init(a,b,c,a.distanceTo(b),b.distanceTo(c),E,I,S);
+    def __init__(  self, a,  b,  c,  E,  I,  A )    :
+        self.init(a,b,c,a.distanceTo(b),b.distanceTo(c),E,I,A);
     
-    def init( self, _a,  _b,  _c,  _L0ab,  _L0bc,  _E,  _I,  _S ) :
+    def init( self, _a,  _b,  _c,  _L0ab,  _L0bc,  _E,  _I,  _A ) :
     #def init( self, _a,  _b,  _c,  _L0ab,  _L0bc,  _E,  _S,  _I ) :
         self.a = _a
         self.b = _b
@@ -681,7 +673,7 @@ class Bending(Force):
         self.stress = 0
         self.on = True
         self.EI = _E*_I
-        self.ES = _E*_S
+        self.EA = _E*_A
         # compute rest distances
         self.L0ab = _L0ab
         self.L0bc = _L0bc 
@@ -697,7 +689,7 @@ class Bending(Force):
     def getStress(self): return self.stress
     
     def setEI( self, E, I )    : self.EI = E*I; return self 
-    def setES( self, E, S )    : self.ES = E*S; return self 
+    def setES( self, E, A )    : self.EA = E*A; return self 
     
     def apply( self):
         
@@ -713,12 +705,12 @@ class Bending(Force):
             bc = self.c.position - self.b.position
             
             # compute tension
-            Tab = ab.multiplyBy(self.ES*(1/self.L0ab - 1/Lab));
-            Tbc = bc.multiplyBy(self.ES*(1/self.L0bc - 1/Lbc));
+            Tab = ab.multiplyBy(self.EA*(1/self.L0ab - 1/Lab));
+            Tbc = bc.multiplyBy(self.EA*(1/self.L0bc - 1/Lbc));
             
             # compute moment
-            Fab = Point3D()
-            Fbc = Point3D()
+            Fab = Point3D(0,0,0)
+            Fbc = Point3D(0,0,0)
             
             if (self.a.position.distanceLineSq(self.b.position,self.c.position) > 10e-8) :
                 Mb = ab.cross(bc).multiplyBy(2*self.EI/(Lac*Lab*Lbc));
@@ -903,7 +895,7 @@ def makeCablesFromList( ps, pts, E = 10, A = 123, t0 = 0, closed = False, fixTen
 #    pass
 
 
-def makeBendingsFromList( ps, pts, E = 28000e06, I =7e-09 , S =2.01062e-04 , closed = False, mergeExistingParticles = True):
+def makeBendingsFromList( ps, pts, E = 28000e06, I =7e-09 , A =2.01062e-04 , closed = False, mergeExistingParticles = True):
     
     particles = []
     
@@ -916,10 +908,10 @@ def makeBendingsFromList( ps, pts, E = 28000e06, I =7e-09 , S =2.01062e-04 , clo
     
     bendings = []
     for i in range(len(particles)-2):
-        bendings.append(ps.makeBending(particles[i],particles[i+1],particles[i+2],E,I,S))
+        bendings.append(ps.makeBending(particles[i],particles[i+1],particles[i+2],E,I,A))
     if closed : # add two bending elements for smooth circle
-        bendings.append(ps.makeBending(particles[-2],particles[-1],particles[0],E,I,S))
-        bendings.append(ps.makeBending(particles[-1],particles[0],particles[1],E,I,S))
+        bendings.append(ps.makeBending(particles[-2],particles[-1],particles[0],E,I,A))
+        bendings.append(ps.makeBending(particles[-1],particles[0],particles[1],E,I,A))
     
     return (particles, bendings)
 
@@ -972,7 +964,7 @@ def makeConstraintsFromList( ps, pts, normal = Point3D(0,0,1), mergeExistingPart
             particles.append(ps.makeParticle(v))
     
     for p in particles:
-        p.constrained(normal)
+        p.defineConstrain(normal)
     
     if len(particles) > 0:
         ps.hasConstrainedParticles = True;
