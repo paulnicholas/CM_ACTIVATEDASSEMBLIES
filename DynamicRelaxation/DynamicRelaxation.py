@@ -273,13 +273,13 @@ class ParticleSystem(object):
         self.bendings.append( m )
         return m
     
-    def makeElastic( self, a,  b,  E,  A,  l0,  t0 ) :
-        m = Elastic( a, b, E , A , l0, t0)
+    def makeElastic( self, a,  b,  E,  A,  l0,  t0, l0coeff ) :
+        m = Elastic( a, b, E , A , l0, t0, l0coeff)
         self.elastics.append( m )
         return m
     
-    def makeCable( self, a,  b,  E,  A,  l0,  t0 ) :
-        m = Cable( a, b, E , A , l0, t0)
+    def makeCable( self, a,  b,  E,  A,  l0,  t0, l0coeff ) :
+        m = Cable( a, b, E , A , l0, t0, l0coeff)
         self.cables.append( m )
         return m
     
@@ -545,10 +545,11 @@ class Elastic(Force) :
     
     # Particle a, b;
     
-    def __init__ (self,  _a,  _b,  _E,  _A,  _l0,  _t0 = 0 ) :
+    def __init__ (self,  _a,  _b,  _E,  _A,  _l0,  _t0 = 0, _l0coeff = 1 ) :
         self.E = _E
         self.A = _A
         self.l0 = _l0
+        self.l0coeff = _l0coeff
         self.t0 = _t0
         self.a = _a
         self.b = _b
@@ -566,6 +567,9 @@ class Elastic(Force) :
     
     def getRestLength(self)  :  return self.l0
     def setRestLength( self, _l ) :  self.l0 = _l; return self  
+    
+    def getRestLengthCoeff(self)  :  return self.l0coeff
+    def setRestLengthCoeff( self, _c ) :  self.l0coeff = _c; return self  
     
     def getPrestress(self)  :  return self.t0
     def setPrestress( self, _t ) : self.t0 = _t; return self  
@@ -600,7 +604,7 @@ class Elastic(Force) :
             
             # if tension not fixed
             if (not self.fixTension):
-                elasticForce = -( a2bDistance - self.l0 ) * self.E*self.A/self.l0 + self.t0
+                elasticForce = -( a2bDistance - (self.l0*self.l0coeff) ) * self.E*self.A/(self.l0*self.l0coeff) + self.t0
             # if tension fixed prestress only
             else: elasticForce = t0
             
@@ -617,8 +621,8 @@ class Elastic(Force) :
 
 class Cable(Elastic) :
     
-    def __init__( self, _a,  _b,  _E,  _A,  _l0,  _t0 = 0 ):
-        super(Cable,self).__init__(_a,_b,_E,_A,_l0,_t0)
+    def __init__( self, _a,  _b,  _E,  _A,  _l0,  _t0 = 0, _l0coeff = 1):
+        super(Cable,self).__init__(_a,_b,_E,_A,_l0,_t0, _l0coeff)
         self.slack = False
         
     def apply(self):
@@ -642,7 +646,7 @@ class Cable(Elastic) :
                 
                 # if tension not fixed
                 if (not self.fixTension):
-                    elasticForce = -( a2bDistance - self.l0 ) * self.E*self.A/self.l0 + self.t0
+                    elasticForce = -( a2bDistance - (self.l0*self.l0coeff) ) * self.E*self.A/(self.l0*self.l0coeff) + self.t0
                 # if tension fixed prestress only
                 else: elasticForce = self.t0
                 
@@ -849,7 +853,7 @@ def makeSpringsFromList( ps, pts, k = 10, l0 = 0, closed = False, mergeExistingP
     return (particles, springs)
 
 
-def makeElasticsFromList( ps, pts, E = 10, A = 123, t0 = 0, closed = False, fixTension = False, mergeExistingParticles = True):
+def makeElasticsFromList( ps, pts, E = 10, A = 123, t0 = 0, lengthCoeff=1, closed = False, fixTension = False, mergeExistingParticles = True):
     
     particles = []
     
@@ -862,14 +866,14 @@ def makeElasticsFromList( ps, pts, E = 10, A = 123, t0 = 0, closed = False, fixT
     
     elastics = []
     for i in range(len(particles)-1):
-        elastics.append(ps.makeElastic(particles[i],particles[i+1],E,A,particles[i].distanceTo(particles[i+1]),t0).setFixedTension(fixTension))
+        elastics.append(ps.makeElastic(particles[i],particles[i+1],E,A,particles[i].distanceTo(particles[i+1]),t0,lengthCoeff).setFixedTension(fixTension))
     if closed :
-        elastics.append(ps.makeElastic(particles[-1],particles[0],E,A,particles[-1].distanceTo(particles[0]),t0).setFixedTension(fixTension))
+        elastics.append(ps.makeElastic(particles[-1],particles[0],E,A,particles[-1].distanceTo(particles[0]),t0,lengthCoeff).setFixedTension(fixTension))
         
     return (particles, elastics)
 
 
-def makeCablesFromList( ps, pts, E = 10, A = 123, t0 = 0, closed = False, fixTension = False, mergeExistingParticles = True):
+def makeCablesFromList( ps, pts, E = 10, A = 123, t0 = 0, lengthCoeff=1, closed = False, fixTension = False, mergeExistingParticles = True):
     
     particles = []
     
@@ -882,9 +886,9 @@ def makeCablesFromList( ps, pts, E = 10, A = 123, t0 = 0, closed = False, fixTen
     
     cables = []
     for i in range(len(particles)-1):
-        cables.append(ps.makeCable(particles[i],particles[i+1],E,A,particles[i].distanceTo(particles[i+1]),t0).setFixedTension(fixTension))
+        cables.append(ps.makeCable(particles[i],particles[i+1],E,A,particles[i].distanceTo(particles[i+1]),t0,lengthCoeff).setFixedTension(fixTension))
     if closed :
-        cables.append(ps.makeCable(particles[-1],particles[0],E,A,particles[-1].distanceTo(particles[0]),t0).setFixedTension(fixTension))
+        cables.append(ps.makeCable(particles[-1],particles[0],E,A,particles[-1].distanceTo(particles[0]),t0,lengthCoeff).setFixedTension(fixTension))
      
     return (particles, cables)
 
@@ -895,7 +899,7 @@ def makeCablesFromList( ps, pts, E = 10, A = 123, t0 = 0, closed = False, fixTen
 #    pass
 
 
-def makeBendingsFromList( ps, pts, E = 28000e06, I =7e-09 , A =2.01062e-04 , closed = False, mergeExistingParticles = True):
+def makeBendingsFromList( ps, pts, E = 28000e06, I =7e-09 , A =2.01062e-04, closed = False, mergeExistingParticles = True):
     
     particles = []
     
@@ -934,7 +938,7 @@ def makeAttractionsFromList( ps, pts, k=10, minDist = 0.01, mergeExistingParticl
     return (particles, attractions)
 
 
-def makeLoadsFromList( ps, pts, dir = Point3D(0,0,-1), scale = 100, mergeExistingParticles = True):
+def makeLoadsFromList( ps, pts, dir = Point3D(0,0,-1), force = 100, mergeExistingParticles = True):
     
     particles = []
     
@@ -947,7 +951,7 @@ def makeLoadsFromList( ps, pts, dir = Point3D(0,0,-1), scale = 100, mergeExistin
     
     loads = []
     for i in range(len(particles)):
-        loads.append(ps.makeLoad(particles[i],dir,scale*dir.length()))
+        loads.append(ps.makeLoad(particles[i],dir,force))
     
     return (particles, loads)
     
