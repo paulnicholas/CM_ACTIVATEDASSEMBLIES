@@ -268,8 +268,8 @@ class ParticleSystem(object):
         self.attractions.append( m )
         return m
     
-    def makeBending(self, a, b, c, E, I, S ) :
-        m = Bending( a, b, c, E , I , S)
+    def makeBending(self, a, b, c, E, I, A, r) :
+        m = Bending( a, b, c, E , I , A, r)
         self.bendings.append( m )
         return m
     
@@ -458,13 +458,20 @@ class Force(object):
     
     def __init__(self):
         self.on = True;
+        self.materialAssignment = ''
       
     def apply(self):
         pass
     
     def getStress(self):
         pass
-          
+        
+    def setMaterialName(self, matName) :
+        self.materialAssignment = matName
+        
+    def getMaterialName(self) :
+        return self.materialAssignment
+    
     def turnOff(self):
         self.on = False; return self 
     
@@ -666,18 +673,20 @@ class Cable(Elastic) :
 
 class Bending(Force):
     
-    def __init__(  self, a,  b,  c,  E,  I,  A )    :
-        self.init(a,b,c,a.distanceTo(b),b.distanceTo(c),E,I,A);
+    def __init__(  self, a,  b,  c,  E,  I,  A, r )    :
+        self.init(a,b,c,a.distanceTo(b),b.distanceTo(c),E,I,A,r);
     
-    def init( self, _a,  _b,  _c,  _L0ab,  _L0bc,  _E,  _I,  _A ) :
+    def init( self, _a,  _b,  _c,  _L0ab,  _L0bc,  _E,  _I,  _A, _r ) :
     #def init( self, _a,  _b,  _c,  _L0ab,  _L0bc,  _E,  _S,  _I ) :
         self.a = _a
         self.b = _b
         self.c = _c
         self.stress = 0
+        self.Rinv = Point3D(0,0,0)
         self.on = True
         self.EI = _E*_I
         self.EA = _E*_A
+        self.Er = _E*_r
         # compute rest distances
         self.L0ab = _L0ab
         self.L0bc = _L0bc 
@@ -689,11 +698,13 @@ class Bending(Force):
     def getOneEnd( self): return self.a
     def getTheMiddle( self): return self.b
     def getTheOtherEnd( self): return self.c
-    
-    def getStress(self): return self.stress
+    # stress is dependant on the distance to neutral axis
+    def getStress(self): self.stress = self.Er * self.Rinv.length(); return self.stress
+    def getRadiusCurvature(self): return 1/self.Rinv.length()
     
     def setEI( self, E, I )    : self.EI = E*I; return self 
     def setES( self, E, A )    : self.EA = E*A; return self 
+    def setEr( self, E, r )    : self.Er = E*r; return self 
     
     def apply( self):
         
@@ -709,22 +720,24 @@ class Bending(Force):
             bc = self.c.position - self.b.position
             
             # compute tension
-            Tab = ab.multiplyBy(self.EA*(1/self.L0ab - 1/Lab));
-            Tbc = bc.multiplyBy(self.EA*(1/self.L0bc - 1/Lbc));
+            Tab = ab.multiplyBy(self.EA*(1/self.L0ab - 1/Lab))
+            Tbc = bc.multiplyBy(self.EA*(1/self.L0bc - 1/Lbc))
             
             # compute moment
             Fab = Point3D(0,0,0)
             Fbc = Point3D(0,0,0)
             
+            self.stress = 0
+            
             if (self.a.position.distanceLineSq(self.b.position,self.c.position) > 10e-8) :
-                Mb = ab.cross(bc).multiplyBy(2*self.EI/(Lac*Lab*Lbc));
-                Fab = ab.cross(Mb).multiplyBy(1.0/(Lab*Lab));
-                Fbc = bc.cross(Mb).multiplyBy(1.0/(Lbc*Lbc));
+                self.Rinv = ab.cross(bc).multiplyBy(2/(Lac*Lab*Lbc))
+                #Mb = ab.cross(bc).multiplyBy(2*self.EI/(Lac*Lab*Lbc))
+                Mb = self.Rinv.multiplyBy(self.EI)
+                Fab = ab.cross(Mb).multiplyBy(1.0/(Lab*Lab))
+                Fbc = bc.cross(Mb).multiplyBy(1.0/(Lbc*Lbc))
+                
             
             # else zero
-            
-            # stress is mean between two bending forces
-            self.stress = 0.5 * (Fab.length() + Fbc.length())
             
             # apply
             
@@ -814,6 +827,7 @@ class Load(Force):
     def setDirection( self, v ):
         # normalize direction
         self.dir = v.multiplyBy(1/v.length()); return self 
+    def getDirection( self): return self.dir
     
     def apply(self):
         
@@ -899,7 +913,7 @@ def makeCablesFromList( ps, pts, E = 10, A = 123, t0 = 0, lengthCoeff=1, closed 
 #    pass
 
 
-def makeBendingsFromList( ps, pts, E = 28000e06, I =7e-09 , A =2.01062e-04, closed = False, mergeExistingParticles = True):
+def makeBendingsFromList( ps, pts, E = 28000e06, I =7e-09 , A =2.01062e-04, r=0.02, closed = False, mergeExistingParticles = True):
     
     particles = []
     
@@ -912,10 +926,10 @@ def makeBendingsFromList( ps, pts, E = 28000e06, I =7e-09 , A =2.01062e-04, clos
     
     bendings = []
     for i in range(len(particles)-2):
-        bendings.append(ps.makeBending(particles[i],particles[i+1],particles[i+2],E,I,A))
+        bendings.append(ps.makeBending(particles[i],particles[i+1],particles[i+2],E,I,A,r))
     if closed : # add two bending elements for smooth circle
-        bendings.append(ps.makeBending(particles[-2],particles[-1],particles[0],E,I,A))
-        bendings.append(ps.makeBending(particles[-1],particles[0],particles[1],E,I,A))
+        bendings.append(ps.makeBending(particles[-2],particles[-1],particles[0],E,I,A,r))
+        bendings.append(ps.makeBending(particles[-1],particles[0],particles[1],E,I,A,r))
     
     return (particles, bendings)
 
