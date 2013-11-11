@@ -3,7 +3,8 @@ class Materials():
     # Materials properties are in N and mm
     # E in N/mm2
     # I in mm^4
-    # A in 
+    # A in mm^2
+    # D in mm
     
     def __init__(self):    
         self.E = -1
