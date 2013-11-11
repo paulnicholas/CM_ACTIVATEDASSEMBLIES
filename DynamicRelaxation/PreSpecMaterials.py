@@ -1,5 +1,10 @@
 class Materials():
-
+    
+    # Materials properties are in N and mm
+    # E in N/mm2
+    # I in mm^4
+    # A in 
+    
     def __init__(self):    
         self.E = -1
         self.A = -1
@@ -8,7 +13,7 @@ class Materials():
         self.D = -1
         self.name = -1
 
-    def steel(self, NAME = 'STEEL', E = 2500, I = 1000, A = 1000, C = 1, D = 1): 
+    def steel(self, NAME = 'STEEL', E = 500, I = 0.78539, A = 3.1415, C = 1, D = 1): 
         self.E = E
         self.A = A
         self.I = I
@@ -17,7 +22,7 @@ class Materials():
         self.name = NAME
         return [self.name, self.E, self.A, self.I, self.C, self.D]
 
-    def gfrp(self, NAME = 'GFRP', E = 2100, I = 1000, A = 1000, C = 1, D = 1): 
+    def gfrp(self, NAME = 'GFRP', E = 40000, I = 0.78539, A = 3.1415, C = 1, D = 1): 
         self.E = E
         self.A = A
         self.I = I
@@ -26,7 +31,7 @@ class Materials():
         self.name = NAME
         return [self.name, self.E, self.A, self.I, self.C, self.D]
 
-    def rattan(self, NAME = 'RATTAN', E = 2100, I = 1000, A = 1000, C = 1, D = 1): 
+    def rattan(self, NAME = 'RATTAN', E = 100, I = 0.78539, A = 3.1415, C = 1, D = 1): 
         self.E = E
         self.A = A
         self.I = I
@@ -35,7 +40,7 @@ class Materials():
         self.name = NAME
         return [self.name, self.E, self.A, self.I, self.C, self.D]
     
-    def pvc(self, NAME = 'PVC', E = 2100, I = 1000, A = 1000, C = 1, D = 1):
+    def pvc(self, NAME = 'PVC', E = 3000, I = 0.78539, A = 3.1415, C = 1, D = 1):
         self.E = E
         self.A = A
         self.I = I
@@ -44,7 +49,16 @@ class Materials():
         self.name = NAME
         return [self.name, self.E, self.A, self.I, self.C, self.D]
         
-    def membrane(self, NAME = 'MEMBRANE', E = 2100, I = 1000, A = 1000, C = 1.9, D = 1): 
+    def membrane(self, NAME = 'MEMBRANE', E = 10, I = 0.78539, A = 3.1415, C = 0.5, D = 1): 
+        self.E = E
+        self.A = A
+        self.I = I
+        self.C = C
+        self.D = D
+        self.name = NAME
+        return [self.name, self.E, self.A, self.I, self.C, self.D]
+    
+    def wood(self, NAME = 'WOOD', E = 7000, I = 0.78539, A = 3.1415, C = 1, D = 1): 
         self.E = E
         self.A = A
         self.I = I
