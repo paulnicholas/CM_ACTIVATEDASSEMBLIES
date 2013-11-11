@@ -14,7 +14,7 @@ class Materials():
         self.D = -1
         self.name = -1
 
-    def steel(self, NAME = 'STEEL', E = 500, I = 0.78539, A = 3.1415, C = 1, D = 1): 
+    def steel(self, NAME = 'STEEL', E = 210000, I = 0.78539, A = 3.1415, C = 1, D = 1): 
         self.E = E
         self.A = A
         self.I = I
@@ -23,7 +23,7 @@ class Materials():
         self.name = NAME
         return [self.name, self.E, self.A, self.I, self.C, self.D]
 
-    def gfrp(self, NAME = 'GFRP', E = 40000, I = 0.78539, A = 3.1415, C = 1, D = 1): 
+    def gfrp(self, NAME = 'GFRP', E = 20000, I = 0.78539, A = 3.1415, C = 1, D = 1): 
         self.E = E
         self.A = A
         self.I = I
@@ -32,7 +32,7 @@ class Materials():
         self.name = NAME
         return [self.name, self.E, self.A, self.I, self.C, self.D]
 
-    def rattan(self, NAME = 'RATTAN', E = 100, I = 0.78539, A = 3.1415, C = 1, D = 1): 
+    def rattan(self, NAME = 'RATTAN', E = 3500, I = 0.78539, A = 3.1415, C = 1, D = 1): 
         self.E = E
         self.A = A
         self.I = I
@@ -59,7 +59,7 @@ class Materials():
         self.name = NAME
         return [self.name, self.E, self.A, self.I, self.C, self.D]
     
-    def wood(self, NAME = 'WOOD', E = 7000, I = 0.78539, A = 3.1415, C = 1, D = 1): 
+    def wood(self, NAME = 'WOOD', E = 11000, I = 0.78539, A = 3.1415, C = 1, D = 1): 
         self.E = E
         self.A = A
         self.I = I
