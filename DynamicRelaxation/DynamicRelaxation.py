@@ -110,6 +110,8 @@ class Particle(object):
         self.fixed = False;
         self.constraint = Point3D(0,0,0);
         self.constrained = False;
+        self.outConstraint = None;
+        self.outConstrained = False;
     
     def __str__(self):
         return 'p: '+str(self.position)+', v: '+str(self.velocity)+ ', fixed: '+str(self.fixed)+', constrained: '+str(self.constrained)
@@ -125,14 +127,23 @@ class Particle(object):
     def massAverage(self): return (self.mass.x() + self.mass.y() + self.mass.z())/3
     def setMass(self, m ): self.mass = Point3D(m,m,m)
     
-    def defineConstrain(self, v) : 
+    def defineConstraint(self, v) : 
         self.constraint = v.normalize()
         self.constrained = True
         
     def getConstraint(self) : return self.constraint
     def isConstrained(self): return self.constrained
+    
+    def defineOutsideConstraint(self,constrainFunc): 
+        self.outConstraint = constrainFunc
+        self.outConstrained = True
         
-    def applyConstrain(self): self.force = self.force.project(self.constraint)
+    def isOutsideConstrained(self): return self.outConstrained
+    
+    def applyOutsideConstraint(self): 
+        self.position = self.outConstraint(self)
+        
+    def applyConstraint(self): self.force = self.force.project(self.constraint)
         
     def update(self): 
         pass
@@ -198,9 +209,13 @@ class ParticleSystem(object):
     
     def step( self,  t=1.0 ):  
         self.integrator.step( t )
+        if self.hasConstrainedParticles:
+            for p in self.particles:
+                if p.isOutsideConstrained():
+                    p.applyOutsideConstraint()
         
     def stepRelax( self, t=1.0 ) :
-        self.integrator.step( t )
+        self.step(t)
         
         tmp = self.computeKinetic()
         print 'kinetic energy: '+str(tmp)
@@ -321,7 +336,7 @@ class ParticleSystem(object):
             for p in self.particles: 
                 #p.update() # HAS NO EFFECT....
                 if p.isConstrained():
-                    p.applyConstrain()
+                    p.applyConstraint()
                     
     
     def clearForces(self) :
@@ -982,10 +997,30 @@ def makeConstraintsFromList( ps, pts, normal = Point3D(0,0,1), mergeExistingPart
             particles.append(ps.makeParticle(v))
     
     for p in particles:
-        p.defineConstrain(normal)
+        p.defineConstraint(normal)
+    
     
     if len(particles) > 0:
         ps.hasConstrainedParticles = True;
     
     return particles
 
+def makeOutsideConstraintsFromList( ps, pts, outsideFunc = None, mergeExistingParticles = True):
+    
+    particles = []
+    
+    # create particles depending on whether there is need to merge the particles that are equal
+    for v in pts : 
+        if mergeExistingParticles :
+            particles.append(ps.makeParticleNonDuplicate(v))
+        else :
+            particles.append(ps.makeParticle(v))
+    
+    for p in particles:
+        p.defineOutsideConstraint(outsideFunc)
+    
+    
+    if len(particles) > 0:
+        ps.hasConstrainedParticles = True;
+    
+    return particles
