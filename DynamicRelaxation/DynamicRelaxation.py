@@ -1024,3 +1024,27 @@ def makeOutsideConstraintsFromList( ps, pts, outsideFunc = None, mergeExistingPa
         ps.hasConstrainedParticles = True;
     
     return particles
+
+    
+def makeOutsideSpringConstraintsFromList( ps, pts, outsideFunc = None, K=100,damp=0.1, mergeExistingParticles = True):
+    
+    particles = []
+    
+    # create particles depending on whether there is need to merge the particles that are equal
+    for v in pts : 
+        if mergeExistingParticles :
+            particles.append(ps.makeParticleNonDuplicate(v))
+        else :
+            particles.append(ps.makeParticle(v))
+    
+    springs = []
+    for p in particles:
+        otherP = ps.makeParticle(p.position)
+        otherP.defineOutsideConstraint(outsideFunc)
+        springs.append(ps.makeSpring(p,otherP,K,0,damp)) # make a spring of rest length 0
+    
+    
+    if len(particles) > 0:
+        ps.hasConstrainedParticles = True;
+    
+    return particles,springs
