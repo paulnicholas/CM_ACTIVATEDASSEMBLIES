@@ -52,3 +52,12 @@ class Materials():
         self.D = D
         self.name = NAME
         return [self.name, self.E, self.A, self.I, self.C, self.D]
+
+    def wood(self, NAME = 'WOOD', E = 2100, I = 1000, A = 1000, C = 1.9, D = 1): 
+        self.E = E
+        self.A = A
+        self.I = I
+        self.C = C
+        self.D = D
+        self.name = NAME
+        return [self.name, self.E, self.A, self.I, self.C, self.D]
