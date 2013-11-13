@@ -12,6 +12,7 @@ For this we provide a DR engine which runs inside rhino/grasshopper. Please foll
 
 1. make sure you have the latest software versions: Rhino 5 up-to-date and grasshopper > 0.9.61 
 2. download the ghpython component from [http://www.food4rhino.com/project/ghpython]. You need to log in *and* follow the instructions.
+2. download the hoopsnake component from [http://www.food4rhino.com/project/hoopsnake]. You need to log in *and* follow the instructions.
 3. restart rhino/grasshopper
 3. open the example_00_DynamicRelaxation.3dm in rhino and DynamicRelaxation.gh in grasshopper
 4. toggle reset to true, then back to false
