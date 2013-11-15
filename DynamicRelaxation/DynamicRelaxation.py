@@ -578,9 +578,9 @@ class Spring(Force):
             # add to virtual mass for each particule
             if resetmass:
                 # compute the contribution of the element to the virtual mass
-                #contrib = self.k
                 contrib = 0
-                if a2bDistance > 0 : contrib += math.fabs(springForce/a2bDistance)
+                #contrib = self.k
+                if (self.l0 > 0) and (a2bDistance > 0) : contrib += math.fabs(springForce/a2bDistance)
                 self.a.addToMass(contrib) 
                 self.b.addToMass(contrib) 
             
