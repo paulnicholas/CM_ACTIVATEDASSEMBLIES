@@ -2,7 +2,6 @@
 
 import math
 
-
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -107,6 +106,7 @@ class Particle(object):
         self.velocity = Point3D(0,0,0);
         self.force = Point3D(0,0,0);
         self.mass = Point3D(m,m,m);
+        self.massTMP = Point3D(m,m,m); # TODO make this less ugly
         self.fixed = False;
         self.positionConstraint = None;
         self.positionConstrained = False;
@@ -125,6 +125,7 @@ class Particle(object):
     def isFree(self): return not self.fixed
     
     def massAverage(self): return (self.mass.x() + self.mass.y() + self.mass.z())/3
+    def addToMass(self,a): self.mass = self.mass.addBy(a,a,a)
     def setMass(self, m ): self.mass = Point3D(m,m,m)
     
     def defineForceConstraint(self, constrainFunc) : 
@@ -175,6 +176,10 @@ class ParticleSystem(object):
         self.hasConstrainedParticles = False;
         self.prevKinetic = 0
         
+        self.virtualLambda = 1.1
+        self.virtualmass = False
+        self.resetmass = True
+        
         self.particles = []
         self.springs = []
         self.attractions = []
@@ -194,17 +199,17 @@ class ParticleSystem(object):
         elif integrator == ParticleSystem.EULER:
             self.integrator =  EulerIntegrator( self )
         
+    def setVirtualMass(self,bool) : self.virtualmass = bool
         
-    def setGravity(self, x, y, z ) :
-        self.gravity.set( x, y, z )
-        
-    def setGravity(self, g ) :
-        self.gravity.set( 0, g, 0 )
-        
-    def setDrag( self, d ) :
-        drag = d
+    def setGravity(self, x, y, z ) : self.gravity.set( x, y, z )
+    #def setGravity(self, g ) : self.gravity.set( 0, g, 0 )    
+    def setDrag( self, d ) : drag = d
     
-    def step( self,  t=1.0 ):  
+    def step( self,  t=1.0 ):
+        if self.virtualmass:
+            for p in self.particles:
+                p.mass = p.massTMP.multiplyBy(1/(t*t))
+                
         self.integrator.step( t )
         if self.hasConstrainedParticles:
             for p in self.particles:
@@ -222,8 +227,12 @@ class ParticleSystem(object):
             for p in self.particles:
                 p.velocity.clear()
             self.prevKinetic = 0
+            self.resetmass = True
             
         else: self.prevKinetic = tmp
+        
+        #self.resetmass = True
+    
     
     def computeKinetic(self) :
         kinetic = 0;
@@ -321,21 +330,32 @@ class ParticleSystem(object):
         if not self.drag == 0 : 
             for p in self.particles:  p.force = p.force + p.velocity.multiplyBy(-self.drag) 
         
-        for  f in self.springs: f.apply()
-        for  f in self.attractions: f.apply()
-        for  f in self.bendings: f.apply()
-        for  f in self.elastics: f.apply()
-        for  f in self.cables: f.apply()
-        for  f in self.loads: f.apply()
-        for  f in self.customForces: f.apply()
+        masscompute = False
+        if self.virtualmass and self.resetmass:
+            masscompute = True
+            for p in self.particles:  p.setMass(1e-6)
+        
+        for  f in self.springs: f.apply(masscompute)
+        for  f in self.attractions: f.apply(masscompute)
+        for  f in self.bendings: f.apply(masscompute)
+        for  f in self.elastics: f.apply(masscompute)
+        for  f in self.cables: f.apply(masscompute)
+        for  f in self.loads: f.apply(masscompute)
+        for  f in self.customForces: f.apply(masscompute)
       
         if (self.hasConstrainedParticles) :
             for p in self.particles: 
                 #p.update() # HAS NO EFFECT....
                 if p.isForceConstrained():
                     p.applyForceConstraint()
-                    
-    
+        
+        # finalize mass computation
+        if masscompute:
+            for p in self.particles:  
+                p.mass = p.mass.multiplyBy(self.virtualLambda*0.5)
+                p.massTMP = p.mass # TODO resolve this ugliness
+        self.resetmass = False
+        
     def clearForces(self) :
         for p in self.particles: p.force.clear()
     
@@ -472,7 +492,7 @@ class Force(object):
         self.on = True;
         self.materialAssignment = ''
       
-    def apply(self):
+    def apply(self,resetmass):
         pass
     
     def getStress(self):
@@ -522,7 +542,7 @@ class Spring(Force):
     def setA( self, p )  : self.a = p; return self 
     def setB( self, p )  : self.b = p; return self 
     
-    def apply(self):
+    def apply(self,resetmass):
         
         if ( self.on and ( self.a.isFree() or self.b.isFree() ) ):
             
@@ -554,7 +574,16 @@ class Spring(Force):
                 self.a.force = self.a.force + a2b
             if (self. b.isFree() ):
                 self.b.force = self.b.force - a2b
-
+                
+            # add to virtual mass for each particule
+            if resetmass:
+                # compute the contribution of the element to the virtual mass
+                contrib = 0
+                #contrib = self.k
+                if (self.l0 > 0) and (a2bDistance > 0) : contrib += math.fabs(springForce/a2bDistance)
+                self.a.addToMass(contrib) 
+                self.b.addToMass(contrib) 
+            
 class Elastic(Force) :
     # E module of elastic material   
     # A section area of elastic material
@@ -605,7 +634,7 @@ class Elastic(Force) :
     def setA(self, _A)  : self.A = _A; return self 
     
     
-    def apply(self):
+    def apply(self,resetmass):
         
         if ( self.on and ( self.a.isFree() or self.b.isFree() ) ) :
         
@@ -637,6 +666,13 @@ class Elastic(Force) :
             # forceB is same as forceA in opposite direction
             if ( self.b.isFree() ):
                 self.b.force = self.b.force - a2b
+                
+            # add to virtual mass for each particule
+            if resetmass:
+                # compute the contribution of the element to the virtual mass
+                contrib = math.fabs(elasticForce/a2bDistance) + self.E*self.A/(self.l0*self.l0coeff)
+                self.a.addToMass(contrib) 
+                self.b.addToMass(contrib) 
 
 class Cable(Elastic) :
     
@@ -644,7 +680,7 @@ class Cable(Elastic) :
         super(Cable,self).__init__(_a,_b,_E,_A,_l0,_t0, _l0coeff)
         self.slack = False
         
-    def apply(self):
+    def apply(self,resetmass):
         if ( self.on and ( self.a.isFree() or self.b.isFree() ) ):
             
             a2b = self.a.position - self.b.position
@@ -679,9 +715,24 @@ class Cable(Elastic) :
                 # forceB is same as forceA in opposite direction
                 if ( self.b.isFree() ):
                     self.b.force = self.b.force - a2b
+                                    
+                # add to virtual mass for each particule
+                if resetmass:
+                    # compute the contribution of the element to the virtual mass
+                    contrib = math.fabs(elasticForce/a2bDistance) + self.E*self.A/(self.l0*self.l0coeff)
+                    self.a.addToMass(contrib) 
+                    self.b.addToMass(contrib) 
+                    
             else :
                 slack = True;
                 self.stress = 0
+
+                # add to virtual mass for each particule
+                if resetmass:
+                    # compute the contribution of the element to the virtual mass
+                    contrib = self.E*self.A/(self.l0*self.l0coeff)
+                    self.a.addToMass(contrib) 
+                    self.b.addToMass(contrib) 
 
 class Bending(Force):
     
@@ -718,7 +769,7 @@ class Bending(Force):
     def setES( self, E, A )    : self.EA = E*A; return self 
     def setEr( self, E, r )    : self.Er = E*r; return self 
     
-    def apply( self):
+    def apply( self,resetmass):
         
         if ( self.on and ( self.a.isFree() or self.b.isFree() or self.c.isFree()) ):
             
@@ -764,6 +815,21 @@ class Bending(Force):
             if ( self.c.isFree()) :
                 self.c.force = self.c.force - Tbc
                 self.c.force = self.c.force + Fbc
+                
+            # add to virtual mass for each particule
+            if resetmass:
+                # compute the contribution of the element to the virtual mass
+                TTab = Tab.length()
+                TTbc = Tbc.length()
+                FFab = Fab.length()
+                FFbc = Fbc.length()
+                
+                contribA = (TTab+FFab)/Lab + self.EA/self.L0ab
+                contribB = (TTab+FFab)/Lab + (TTbc+FFbc)/Lbc + self.EA/self.L0ab + self.EA/self.L0bc
+                contribC = (TTbc+FFbc)/Lbc + self.EA/self.L0bc
+                self.a.addToMass(contribA) 
+                self.b.addToMass(contribB) 
+                self.c.addToMass(contribC) 
 
 class Attraction(Force):
     
@@ -793,7 +859,7 @@ class Attraction(Force):
     def getOneEnd(self): return self.a; return self 
     def getTheOtherEnd(self): return self.b; return self 
     
-    def apply(self):
+    def apply(self,resetmass):
         if ( self.on and ( self.a.isFree() or self.b.isFree() ) ):
             
             a2b = self.a.position - self.b.position
@@ -819,6 +885,10 @@ class Attraction(Force):
                 self.a.force = self.a.force - a2b
             if ( self.b.isFree() ):
                 self.b.force = self.b.force + a2b
+                
+            # add to virtual mass for each particule
+            if resetmass:
+                pass #TODO
 
 class Load(Force):
     
@@ -841,13 +911,16 @@ class Load(Force):
         self.dir = v.multiplyBy(1/v.length()); return self 
     def getDirection( self): return self.dir
     
-    def apply(self):
+    def apply(self,resetmass):
         
         load = self.dir.multiplyBy(self.force) 
         
         if ( self.on and self.a.isFree() ):
                 self.a.force = self.a.force + load
-
+                
+        # add to virtual mass for each particule
+        if resetmass:
+            pass # is it needed????
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -857,7 +930,6 @@ class Load(Force):
 
 
 # constructor functions
-
 
 def mergeParticles(ps,pts,mergeExistingParticles):
     
@@ -870,7 +942,6 @@ def mergeParticles(ps,pts,mergeExistingParticles):
             particles.append(ps.makeParticle(v))
     return particles
 
-
 def makeSpringsFromList( ps, pts, k = 10, l0 = 0, closed = False, mergeExistingParticles = True):
     
     particles = mergeParticles(ps,pts,mergeExistingParticles)
@@ -881,7 +952,6 @@ def makeSpringsFromList( ps, pts, k = 10, l0 = 0, closed = False, mergeExistingP
         springs.append(ps.makeSpring(particles[-1],particles[0],k,l0))
         
     return (particles, springs)
-
 
 def makeElasticsFromList( ps, pts, E = 10, A = 123, t0 = 0, lengthCoeff=1, closed = False, fixTension = False, mergeExistingParticles = True):
     
@@ -894,7 +964,6 @@ def makeElasticsFromList( ps, pts, E = 10, A = 123, t0 = 0, lengthCoeff=1, close
         
     return (particles, elastics)
 
-
 def makeCablesFromList( ps, pts, E = 10, A = 123, t0 = 0, lengthCoeff=1, closed = False, fixTension = False, mergeExistingParticles = True):
     
     particles = mergeParticles(ps,pts,mergeExistingParticles)
@@ -905,13 +974,6 @@ def makeCablesFromList( ps, pts, E = 10, A = 123, t0 = 0, lengthCoeff=1, closed 
         cables.append(ps.makeCable(particles[-1],particles[0],E,A,particles[-1].distanceTo(particles[0]),t0,lengthCoeff).setFixedTension(fixTension))
      
     return (particles, cables)
-
-
-#def makeBendingFromGrid( ps, grid, mergeExistingParticles = True):
-#    
-#    
-#    pass
-
 
 def makeBendingsFromList( ps, pts, E = 28000e06, I =7e-09 , A =2.01062e-04, r=0.02, closed = False, mergeExistingParticles = True):
     
@@ -925,7 +987,6 @@ def makeBendingsFromList( ps, pts, E = 28000e06, I =7e-09 , A =2.01062e-04, r=0.
     
     return (particles, bendings)
 
-
 def makeAttractionsFromList( ps, pts, k=10, minDist = 0.01, mergeExistingParticles = True):
     
     particles = mergeParticles(ps,pts,mergeExistingParticles)
@@ -935,7 +996,6 @@ def makeAttractionsFromList( ps, pts, k=10, minDist = 0.01, mergeExistingParticl
     
     return (particles, attractions)
 
-
 def makeLoadsFromList( ps, pts, dir = Point3D(0,0,-1), force = 100, mergeExistingParticles = True):
     
     particles = mergeParticles(ps,pts,mergeExistingParticles)
@@ -944,8 +1004,6 @@ def makeLoadsFromList( ps, pts, dir = Point3D(0,0,-1), force = 100, mergeExistin
         loads.append(ps.makeLoad(particles[i],dir,force))
     
     return (particles, loads)
-    
-
     
     
 class PlaneConstraint(object):
@@ -984,7 +1042,7 @@ def makeConstraintsFromList( ps, pts, vector = Point3D(0,0,1), onPlane = True, m
     if len(particles) > 0:
         ps.hasConstrainedParticles = True;
     
-    return particles
+    return particles,constraint
 
 def makeOutsideConstraintsFromList( ps, pts, outsideFunc = None, mergeExistingParticles = True):
     
@@ -996,9 +1054,7 @@ def makeOutsideConstraintsFromList( ps, pts, outsideFunc = None, mergeExistingPa
         ps.hasConstrainedParticles = True;
     
     return particles
-
-
-    
+  
 def makeOutsideSpringConstraintsFromList( ps, pts, outsideFunc = None, K=100,damp=0.1, mergeExistingParticles = True):
     
     particles = mergeParticles(ps,pts,mergeExistingParticles)
@@ -1012,3 +1068,5 @@ def makeOutsideSpringConstraintsFromList( ps, pts, outsideFunc = None, K=100,dam
         ps.hasConstrainedParticles = True;
     
     return particles,springs
+
+    
